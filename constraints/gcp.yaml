@@ -1,0 +1,107 @@
+version: "1.0"
+provider: gcp
+constraints:
+  # Compute Engine Free Tier
+  - service: compute
+    resource_type: f1-micro
+    region: us-central1
+    limit_type: free_tier_hours
+    limit_value: 744
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Compute Engine f1-micro instance in us-central1 - Always Free"
+    
+  - service: compute
+    resource_type: f1-micro
+    region: us-east1
+    limit_type: free_tier_hours
+    limit_value: 744
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Compute Engine f1-micro instance in us-east1 - Always Free"
+    
+  - service: compute
+    resource_type: f1-micro
+    region: us-west1
+    limit_type: free_tier_hours
+    limit_value: 744
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Compute Engine f1-micro instance in us-west1 - Always Free"
+    
+  # Compute Engine Persistent Disk
+  - service: compute
+    resource_type: standard_persistent_disk
+    region: "*"
+    limit_type: free_tier_gb
+    limit_value: 30
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Standard persistent disk - 30 GB Always Free"
+    
+  # Cloud Storage Free Tier
+  - service: storage
+    resource_type: standard_storage
+    region: us-central1
+    limit_type: free_tier_gb
+    limit_value: 5
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Cloud Storage Standard - 5 GB Always Free in us-central1"
+    
+  - service: storage
+    resource_type: class_a_operations
+    region: "*"
+    limit_type: free_tier_operations
+    limit_value: 5000
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Cloud Storage Class A operations - 5,000 Always Free"
+    
+  - service: storage
+    resource_type: class_b_operations
+    region: "*"
+    limit_type: free_tier_operations
+    limit_value: 50000
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Cloud Storage Class B operations - 50,000 Always Free"
+    
+  # Cloud Functions Free Tier
+  - service: functions
+    resource_type: invocations
+    region: "*"
+    limit_type: free_tier_invocations
+    limit_value: 2000000
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Cloud Functions invocations - 2 million Always Free"
+    
+  - service: functions
+    resource_type: compute_time_ghz_seconds
+    region: "*"
+    limit_type: free_tier_ghz_seconds
+    limit_value: 400000
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Cloud Functions compute time - 400,000 GHz-seconds Always Free"
+    
+  # App Engine Free Tier
+  - service: appengine
+    resource_type: standard_instances
+    region: "*"
+    limit_type: free_tier_hours
+    limit_value: 28
+    period: daily
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "App Engine Standard instances - 28 hours/day Always Free"

@@ -1,0 +1,87 @@
+version: "1.0"
+provider: aws
+constraints:
+  # EC2 Free Tier
+  - service: ec2
+    resource_type: t2.micro
+    region: "*"
+    limit_type: free_tier_hours
+    limit_value: 750
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "EC2 t2.micro instance - 750 hours/month free tier"
+    
+  # EBS Free Tier
+  - service: ebs
+    resource_type: gp2
+    region: "*"
+    limit_type: free_tier_gb
+    limit_value: 30
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "EBS General Purpose SSD - 30 GB free tier"
+    
+  # S3 Free Tier
+  - service: s3
+    resource_type: standard_storage
+    region: "*"
+    limit_type: free_tier_gb
+    limit_value: 5
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "S3 Standard storage - 5 GB free tier"
+    
+  - service: s3
+    resource_type: requests_get
+    region: "*"
+    limit_type: free_tier_requests
+    limit_value: 20000
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "S3 GET requests - 20,000 requests free tier"
+    
+  # Lambda Free Tier
+  - service: lambda
+    resource_type: requests
+    region: "*"
+    limit_type: free_tier_requests
+    limit_value: 1000000
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Lambda requests - 1 million requests free tier"
+    
+  - service: lambda
+    resource_type: compute_seconds
+    region: "*"
+    limit_type: free_tier_gb_seconds
+    limit_value: 400000
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Lambda compute time - 400,000 GB-seconds free tier"
+    
+  # RDS Free Tier
+  - service: rds
+    resource_type: db.t3.micro
+    region: "*"
+    limit_type: free_tier_hours
+    limit_value: 750
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "RDS db.t3.micro instance - 750 hours/month free tier"
+    
+  - service: rds
+    resource_type: storage
+    region: "*"
+    limit_type: free_tier_gb
+    limit_value: 20
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "RDS General Purpose storage - 20 GB free tier"

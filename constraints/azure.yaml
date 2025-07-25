@@ -1,0 +1,98 @@
+version: "1.0"
+provider: azure
+constraints:
+  # Virtual Machines Free Tier
+  - service: compute
+    resource_type: B1s
+    region: "*"
+    limit_type: free_tier_hours
+    limit_value: 750
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "B1s Virtual Machine - 750 hours/month free tier"
+    
+  # Azure Storage Free Tier
+  - service: storage
+    resource_type: locally_redundant_storage
+    region: "*"
+    limit_type: free_tier_gb
+    limit_value: 5
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Locally Redundant Storage - 5 GB free tier"
+    
+  - service: storage
+    resource_type: transactions
+    region: "*"
+    limit_type: free_tier_transactions
+    limit_value: 20000
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Storage transactions - 20,000 free tier"
+    
+  # Azure Functions Free Tier
+  - service: functions
+    resource_type: executions
+    region: "*"
+    limit_type: free_tier_executions
+    limit_value: 1000000
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Azure Functions executions - 1 million free tier"
+    
+  - service: functions
+    resource_type: compute_gb_seconds
+    region: "*"
+    limit_type: free_tier_gb_seconds
+    limit_value: 400000
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Azure Functions compute time - 400,000 GB-seconds free tier"
+    
+  # Azure SQL Database Free Tier
+  - service: sql
+    resource_type: basic_database
+    region: "*"
+    limit_type: free_tier_count
+    limit_value: 1
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "SQL Database Basic tier - 1 database free tier"
+    
+  # Azure App Service Free Tier
+  - service: appservice
+    resource_type: f1_shared
+    region: "*"
+    limit_type: free_tier_hours
+    limit_value: 60
+    period: daily
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "App Service F1 shared tier - 60 minutes/day free tier"
+    
+  # Azure Container Instances Free Tier
+  - service: containerinstances
+    resource_type: cpu_seconds
+    region: "*"
+    limit_type: free_tier_cpu_seconds
+    limit_value: 1000000
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Container Instances vCPU seconds - 1 million free tier"
+    
+  - service: containerinstances
+    resource_type: memory_gb_seconds
+    region: "*"
+    limit_type: free_tier_memory_gb_seconds
+    limit_value: 1500000
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Container Instances memory GB seconds - 1.5 million free tier"
