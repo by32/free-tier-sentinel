@@ -1,6 +1,5 @@
 """Constraint querying functionality."""
 
-
 from sentinel.models.core import Constraint
 
 

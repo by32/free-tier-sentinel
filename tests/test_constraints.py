@@ -77,7 +77,10 @@ class TestConstraintValidator:
         result = validator.validate_yaml(invalid_yaml_content)
 
         assert result.is_valid is False
-        assert "negative" in str(result.errors).lower() or "positive" in str(result.errors).lower()
+        assert (
+            "negative" in str(result.errors).lower()
+            or "positive" in str(result.errors).lower()
+        )
 
     def test_invalid_provider_name_fails_validation(self):
         """Test that invalid provider names fail validation."""
@@ -176,8 +179,10 @@ class TestConstraintLoader:
             cost_per_unit: "0.00"
         """
 
-        with patch("pathlib.Path.glob") as mock_glob, \
-             patch("builtins.open", mock_open()) as mock_file:
+        with (
+            patch("pathlib.Path.glob") as mock_glob,
+            patch("builtins.open", mock_open()) as mock_file,
+        ):
 
             # Mock directory structure
             mock_glob.return_value = [Path("aws.yaml"), Path("gcp.yaml")]
@@ -225,7 +230,7 @@ class TestConstraintQuery:
                 limit_value=750,
                 period="monthly",
                 currency="USD",
-                cost_per_unit=Decimal("0.00")
+                cost_per_unit=Decimal("0.00"),
             ),
             Constraint(
                 provider="aws",
@@ -236,7 +241,7 @@ class TestConstraintQuery:
                 limit_value=0,
                 period="monthly",
                 currency="USD",
-                cost_per_unit=Decimal("0.023")
+                cost_per_unit=Decimal("0.023"),
             ),
             Constraint(
                 provider="gcp",
@@ -247,8 +252,8 @@ class TestConstraintQuery:
                 limit_value=744,
                 period="monthly",
                 currency="USD",
-                cost_per_unit=Decimal("0.00")
-            )
+                cost_per_unit=Decimal("0.00"),
+            ),
         ]
 
     def test_query_by_provider(self, sample_constraints):

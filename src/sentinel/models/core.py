@@ -126,6 +126,10 @@ class Resource(BaseModel):
         if v <= 0:
             raise ValueError("quantity must be positive")
         return v
+    
+    def __hash__(self):
+        """Make Resource hashable for use as dictionary keys."""
+        return hash((self.provider, self.service, self.resource_type, self.region, self.quantity, self.estimated_monthly_usage))
 
 
 class Plan(BaseModel):

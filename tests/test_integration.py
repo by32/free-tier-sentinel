@@ -30,7 +30,7 @@ class TestConstraintIntegration:
         assert len(providers) >= 2  # At least AWS and GCP
 
         # All constraints should be valid Constraint objects
-        assert all(hasattr(c, 'is_free_tier') for c in constraints)
+        assert all(hasattr(c, "is_free_tier") for c in constraints)
 
     def test_query_real_constraints(self):
         """Test querying capabilities with real constraint data."""
@@ -99,21 +99,27 @@ class TestConstraintIntegration:
         query = ConstraintQuery(constraints)
 
         # AWS should have EC2 t2.micro free tier
-        aws_ec2 = query.by_provider("aws").by_service("ec2").by_resource_type("t2.micro")
+        aws_ec2 = (
+            query.by_provider("aws").by_service("ec2").by_resource_type("t2.micro")
+        )
         if len(aws_ec2) > 0:
             ec2_constraint = aws_ec2[0]
             assert ec2_constraint.limit_value == 750  # 750 hours/month
             assert ec2_constraint.is_free_tier()
 
         # GCP should have f1-micro free tier
-        gcp_compute = query.by_provider("gcp").by_service("compute").by_resource_type("f1-micro")
+        gcp_compute = (
+            query.by_provider("gcp").by_service("compute").by_resource_type("f1-micro")
+        )
         if len(gcp_compute) > 0:
             f1_constraint = gcp_compute[0]
             assert f1_constraint.limit_value == 744  # 744 hours/month
             assert f1_constraint.is_free_tier()
 
         # Azure should have B1s free tier
-        azure_compute = query.by_provider("azure").by_service("compute").by_resource_type("B1s")
+        azure_compute = (
+            query.by_provider("azure").by_service("compute").by_resource_type("B1s")
+        )
         if len(azure_compute) > 0:
             b1s_constraint = azure_compute[0]
             assert b1s_constraint.limit_value == 750  # 750 hours/month

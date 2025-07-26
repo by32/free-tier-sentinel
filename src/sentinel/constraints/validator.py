@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, ValidationError
 @dataclass
 class ValidationResult:
     """Result of constraint validation."""
+
     is_valid: bool
     errors: list[str]
     data: dict[str, Any] | None = None
@@ -36,8 +37,14 @@ class ConstraintSchema(BaseModel):
     def _validate_constraint(self, constraint: dict[str, Any]) -> None:
         """Validate individual constraint data."""
         required_fields = {
-            "service", "resource_type", "region", "limit_type",
-            "limit_value", "period", "currency", "cost_per_unit"
+            "service",
+            "resource_type",
+            "region",
+            "limit_type",
+            "limit_value",
+            "period",
+            "currency",
+            "cost_per_unit",
         }
 
         missing_fields = required_fields - set(constraint.keys())
@@ -58,32 +65,20 @@ class ConstraintValidator:
             # Parse YAML
             data = yaml.safe_load(yaml_content)
             if not data:
-                return ValidationResult(
-                    is_valid=False,
-                    errors=["Empty YAML content"]
-                )
+                return ValidationResult(is_valid=False, errors=["Empty YAML content"])
 
             # Validate against schema
             ConstraintSchema(**data)
 
-            return ValidationResult(
-                is_valid=True,
-                errors=[],
-                data=data
-            )
+            return ValidationResult(is_valid=True, errors=[], data=data)
 
         except yaml.YAMLError as e:
             return ValidationResult(
-                is_valid=False,
-                errors=[f"YAML parsing error: {str(e)}"]
+                is_valid=False, errors=[f"YAML parsing error: {str(e)}"]
             )
         except ValidationError as e:
             return ValidationResult(
-                is_valid=False,
-                errors=[f"Validation error: {str(e)}"]
+                is_valid=False, errors=[f"Validation error: {str(e)}"]
             )
         except ValueError as e:
-            return ValidationResult(
-                is_valid=False,
-                errors=[str(e)]
-            )
+            return ValidationResult(is_valid=False, errors=[str(e)])

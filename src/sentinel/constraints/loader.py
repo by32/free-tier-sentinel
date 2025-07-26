@@ -18,7 +18,7 @@ class ConstraintLoader:
         """Load constraints from a single YAML file."""
         try:
             # Read file content
-            with open(file_path, encoding='utf-8') as file:
+            with open(file_path, encoding="utf-8") as file:
                 content = file.read()
 
             # Validate content
@@ -40,7 +40,7 @@ class ConstraintLoader:
                     limit_value=constraint_data["limit_value"],
                     period=constraint_data["period"],
                     currency=constraint_data["currency"],
-                    cost_per_unit=Decimal(str(constraint_data["cost_per_unit"]))
+                    cost_per_unit=Decimal(str(constraint_data["cost_per_unit"])),
                 )
                 constraints.append(constraint)
 

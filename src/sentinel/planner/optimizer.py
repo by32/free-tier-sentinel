@@ -24,7 +24,7 @@ class PlanOptimizer:
         optimized_plan = Plan(
             name=f"{plan.name}-optimized",
             description=f"Cost-optimized version of {plan.description}",
-            resources=[]
+            resources=[],
         )
 
         # Analyze original plan requirements
@@ -33,7 +33,9 @@ class PlanOptimizer:
 
         for resource in plan.resources:
             if resource.service in ["ec2", "compute"]:
-                total_compute_hours += resource.quantity * resource.estimated_monthly_usage
+                total_compute_hours += (
+                    resource.quantity * resource.estimated_monthly_usage
+                )
             elif resource.service in ["s3", "storage"]:
                 total_storage_gb += resource.quantity * resource.estimated_monthly_usage
 
@@ -59,7 +61,7 @@ class PlanOptimizer:
         plan = Plan(
             name="budget-optimized",
             description=f"Plan optimized for budget ${max_budget}",
-            resources=[]
+            resources=[],
         )
 
         remaining_budget = max_budget
@@ -94,7 +96,7 @@ class PlanOptimizer:
         plan = Plan(
             name="free-tier-only",
             description="Plan using only free tier resources",
-            resources=[]
+            resources=[],
         )
 
         # Get all free tier constraints
@@ -111,9 +113,13 @@ class PlanOptimizer:
                             provider=constraint.provider,
                             service=constraint.service,
                             resource_type=constraint.resource_type,
-                            region=constraint.region if constraint.region != "*" else "us-east-1",
+                            region=(
+                                constraint.region
+                                if constraint.region != "*"
+                                else "us-east-1"
+                            ),
                             quantity=1,
-                            estimated_monthly_usage=allocation
+                            estimated_monthly_usage=allocation,
                         )
                         plan.resources.append(resource)
                         remaining_hours -= allocation
@@ -133,9 +139,13 @@ class PlanOptimizer:
                             provider=constraint.provider,
                             service=constraint.service,
                             resource_type=constraint.resource_type,
-                            region=constraint.region if constraint.region != "*" else "us-east-1",
+                            region=(
+                                constraint.region
+                                if constraint.region != "*"
+                                else "us-east-1"
+                            ),
                             quantity=1,
-                            estimated_monthly_usage=allocation
+                            estimated_monthly_usage=allocation,
                         )
                         plan.resources.append(resource)
                         remaining_storage -= allocation
@@ -170,9 +180,11 @@ class PlanOptimizer:
                     provider=constraint.provider,
                     service=constraint.service,
                     resource_type=constraint.resource_type,
-                    region=constraint.region if constraint.region != "*" else "us-east-1",
+                    region=(
+                        constraint.region if constraint.region != "*" else "us-east-1"
+                    ),
                     quantity=1,
-                    estimated_monthly_usage=allocation
+                    estimated_monthly_usage=allocation,
                 )
                 resources.append(resource)
                 remaining_hours -= allocation
@@ -203,9 +215,11 @@ class PlanOptimizer:
                     provider=constraint.provider,
                     service=constraint.service,
                     resource_type=constraint.resource_type,
-                    region=constraint.region if constraint.region != "*" else "us-east-1",
+                    region=(
+                        constraint.region if constraint.region != "*" else "us-east-1"
+                    ),
                     quantity=1,
-                    estimated_monthly_usage=allocation
+                    estimated_monthly_usage=allocation,
                 )
                 resources.append(resource)
                 remaining_gb -= allocation
@@ -213,9 +227,7 @@ class PlanOptimizer:
         return resources
 
     def _allocate_compute_within_budget(
-        self,
-        hours: int,
-        budget: Decimal
+        self, hours: int, budget: Decimal
     ) -> tuple[list[Resource], Decimal]:
         """Allocate compute resources within budget constraint."""
         resources = []
@@ -240,7 +252,11 @@ class PlanOptimizer:
                 allocation = min(remaining_hours, constraint.limit_value)
                 cost = Decimal("0.00")
             else:
-                max_affordable = int(remaining_budget / constraint.cost_per_unit) if constraint.cost_per_unit > 0 else 0
+                max_affordable = (
+                    int(remaining_budget / constraint.cost_per_unit)
+                    if constraint.cost_per_unit > 0
+                    else 0
+                )
                 allocation = min(remaining_hours, max_affordable)
                 cost = Decimal(str(allocation)) * constraint.cost_per_unit
 
@@ -249,9 +265,11 @@ class PlanOptimizer:
                     provider=constraint.provider,
                     service=constraint.service,
                     resource_type=constraint.resource_type,
-                    region=constraint.region if constraint.region != "*" else "us-east-1",
+                    region=(
+                        constraint.region if constraint.region != "*" else "us-east-1"
+                    ),
                     quantity=1,
-                    estimated_monthly_usage=allocation
+                    estimated_monthly_usage=allocation,
                 )
                 resources.append(resource)
                 remaining_hours -= allocation
@@ -261,9 +279,7 @@ class PlanOptimizer:
         return resources, total_cost
 
     def _allocate_storage_within_budget(
-        self,
-        gb: int,
-        budget: Decimal
+        self, gb: int, budget: Decimal
     ) -> tuple[list[Resource], Decimal]:
         """Allocate storage resources within budget constraint."""
         resources = []
@@ -288,7 +304,11 @@ class PlanOptimizer:
                 allocation = min(remaining_gb, constraint.limit_value)
                 cost = Decimal("0.00")
             else:
-                max_affordable = int(remaining_budget / constraint.cost_per_unit) if constraint.cost_per_unit > 0 else 0
+                max_affordable = (
+                    int(remaining_budget / constraint.cost_per_unit)
+                    if constraint.cost_per_unit > 0
+                    else 0
+                )
                 allocation = min(remaining_gb, max_affordable)
                 cost = Decimal(str(allocation)) * constraint.cost_per_unit
 
@@ -297,9 +317,11 @@ class PlanOptimizer:
                     provider=constraint.provider,
                     service=constraint.service,
                     resource_type=constraint.resource_type,
-                    region=constraint.region if constraint.region != "*" else "us-east-1",
+                    region=(
+                        constraint.region if constraint.region != "*" else "us-east-1"
+                    ),
                     quantity=1,
-                    estimated_monthly_usage=allocation
+                    estimated_monthly_usage=allocation,
                 )
                 resources.append(resource)
                 remaining_gb -= allocation
@@ -307,3 +329,162 @@ class PlanOptimizer:
                 total_cost += cost
 
         return resources, total_cost
+
+
+class CapacityAwarePlanOptimizer(PlanOptimizer):
+    """Plan optimizer that considers capacity availability."""
+
+    def __init__(self, constraints: list[Constraint], capacity_aggregator):
+        """Initialize optimizer with constraints and capacity aggregator."""
+        super().__init__(constraints)
+        self.capacity_aggregator = capacity_aggregator
+
+    def optimize_with_capacity_constraints(self, requirements: dict[str, Any]) -> Plan:
+        """Optimize plan considering both cost and capacity constraints."""
+        compute_hours = requirements.get("compute_hours", 0)
+        storage_gb = requirements.get("storage_gb", 0)
+        preferred_providers = requirements.get(
+            "preferred_providers", ["aws", "gcp", "azure"]
+        )
+
+        plan = Plan(
+            name="capacity-optimized",
+            description="Plan optimized for both cost and capacity",
+            resources=[],
+        )
+
+        # Get constraints and filter by available capacity
+        available_constraints = self._filter_constraints_by_capacity(
+            preferred_providers
+        )
+
+        # Allocate compute resources
+        if compute_hours > 0:
+            compute_resources = self._allocate_compute_with_capacity(
+                compute_hours, available_constraints
+            )
+            plan.resources.extend(compute_resources)
+
+        # Allocate storage resources
+        if storage_gb > 0:
+            storage_resources = self._allocate_storage_with_capacity(
+                storage_gb, available_constraints
+            )
+            plan.resources.extend(storage_resources)
+
+        return plan
+
+    def _filter_constraints_by_capacity(
+        self, preferred_providers: list[str]
+    ) -> list[Constraint]:
+        """Filter constraints to only include those with available capacity."""
+        available_constraints = []
+
+        for constraint in self.constraints:
+            if constraint.provider not in preferred_providers:
+                continue
+
+            try:
+                # Check capacity for this constraint
+                capacity_result = self.capacity_aggregator.check_availability(
+                    constraint.provider,
+                    constraint.region if constraint.region != "*" else "us-east-1",
+                    constraint.resource_type,
+                )
+
+                if capacity_result.available:
+                    # Add capacity level as a property for sorting
+                    constraint_with_capacity = constraint
+                    constraint_with_capacity._capacity_level = (
+                        capacity_result.capacity_level
+                    )
+                    available_constraints.append(constraint_with_capacity)
+
+            except Exception:
+                # Skip constraints where capacity check fails
+                continue
+
+        return available_constraints
+
+    def _allocate_compute_with_capacity(
+        self, total_hours: int, available_constraints: list[Constraint]
+    ) -> list[Resource]:
+        """Allocate compute resources considering capacity levels."""
+        resources = []
+        remaining_hours = total_hours
+
+        # Filter and sort compute constraints by capacity and cost
+        compute_constraints = [
+            c for c in available_constraints if c.service in ["ec2", "compute"]
+        ]
+
+        # Sort by: free tier first, then by capacity level (desc), then by cost
+        compute_constraints.sort(
+            key=lambda c: (
+                not c.is_free_tier(),  # Free tier first
+                -getattr(c, "_capacity_level", 0.0),  # Higher capacity first
+                c.cost_per_unit,  # Lower cost first
+            )
+        )
+
+        for constraint in compute_constraints:
+            if remaining_hours <= 0:
+                break
+
+            allocation = min(remaining_hours, constraint.limit_value)
+            if allocation > 0:
+                resource = Resource(
+                    provider=constraint.provider,
+                    service=constraint.service,
+                    resource_type=constraint.resource_type,
+                    region=(
+                        constraint.region if constraint.region != "*" else "us-east-1"
+                    ),
+                    quantity=1,
+                    estimated_monthly_usage=allocation,
+                )
+                resources.append(resource)
+                remaining_hours -= allocation
+
+        return resources
+
+    def _allocate_storage_with_capacity(
+        self, total_gb: int, available_constraints: list[Constraint]
+    ) -> list[Resource]:
+        """Allocate storage resources considering capacity levels."""
+        resources = []
+        remaining_gb = total_gb
+
+        # Filter and sort storage constraints
+        storage_constraints = [
+            c for c in available_constraints if c.service in ["s3", "storage"]
+        ]
+
+        storage_constraints.sort(
+            key=lambda c: (
+                not c.is_free_tier(),
+                -getattr(c, "_capacity_level", 0.0),
+                c.cost_per_unit,
+            )
+        )
+
+        for constraint in storage_constraints:
+            if remaining_gb <= 0:
+                break
+
+            allocation = min(remaining_gb, constraint.limit_value)
+            if allocation > 0:
+                resource = Resource(
+                    provider=constraint.provider,
+                    service=constraint.service,
+                    resource_type=constraint.resource_type,
+                    region=(
+                        constraint.region if constraint.region != "*" else "us-east-1"
+                    ),
+                    quantity=1,
+                    estimated_monthly_usage=allocation,
+                )
+                resources.append(resource)
+                remaining_gb -= allocation
+
+        return resources

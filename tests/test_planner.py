@@ -27,7 +27,7 @@ class TestCostCalculator:
                 limit_value=750,
                 period="monthly",
                 currency="USD",
-                cost_per_unit=Decimal("0.00")
+                cost_per_unit=Decimal("0.00"),
             ),
             Constraint(
                 provider="aws",
@@ -38,7 +38,7 @@ class TestCostCalculator:
                 limit_value=0,  # No free tier
                 period="monthly",
                 currency="USD",
-                cost_per_unit=Decimal("0.023")
+                cost_per_unit=Decimal("0.023"),
             ),
             Constraint(
                 provider="aws",
@@ -49,8 +49,8 @@ class TestCostCalculator:
                 limit_value=5,
                 period="monthly",
                 currency="USD",
-                cost_per_unit=Decimal("0.00")
-            )
+                cost_per_unit=Decimal("0.00"),
+            ),
         ]
 
     def test_cost_calculator_creation(self, sample_constraints):
@@ -70,7 +70,7 @@ class TestCostCalculator:
             resource_type="t2.micro",
             region="us-east-1",
             quantity=1,
-            estimated_monthly_usage=500  # Under 750 hour limit
+            estimated_monthly_usage=500,  # Under 750 hour limit
         )
 
         cost_result = calculator.calculate_resource_cost(resource)
@@ -90,7 +90,7 @@ class TestCostCalculator:
             resource_type="t2.micro",
             region="us-east-1",
             quantity=1,
-            estimated_monthly_usage=800  # Exceeds 750 hour limit
+            estimated_monthly_usage=800,  # Exceeds 750 hour limit
         )
 
         cost_result = calculator.calculate_resource_cost(resource)
@@ -110,7 +110,7 @@ class TestCostCalculator:
             resource_type="t2.small",
             region="us-east-1",
             quantity=1,
-            estimated_monthly_usage=100
+            estimated_monthly_usage=100,
         )
 
         cost_result = calculator.calculate_resource_cost(resource)
@@ -132,7 +132,7 @@ class TestCostCalculator:
                 region="us-east-1",
                 current_usage=300,  # Already used 300 hours
                 period_start=datetime(2024, 1, 1, tzinfo=UTC),
-                period_end=datetime(2024, 1, 31, tzinfo=UTC)
+                period_end=datetime(2024, 1, 31, tzinfo=UTC),
             )
         ]
 
@@ -142,7 +142,7 @@ class TestCostCalculator:
             resource_type="t2.micro",
             region="us-east-1",
             quantity=1,
-            estimated_monthly_usage=500  # Want to use 500 more
+            estimated_monthly_usage=500,  # Want to use 500 more
         )
 
         cost_result = calculator.calculate_resource_cost(resource, existing_usage)
@@ -166,7 +166,7 @@ class TestCostCalculator:
                     resource_type="t2.micro",
                     region="us-east-1",
                     quantity=1,
-                    estimated_monthly_usage=500
+                    estimated_monthly_usage=500,
                 ),
                 Resource(
                     provider="aws",
@@ -174,9 +174,9 @@ class TestCostCalculator:
                     resource_type="standard_storage",
                     region="*",
                     quantity=1,
-                    estimated_monthly_usage=3  # 3 GB storage
-                )
-            ]
+                    estimated_monthly_usage=3,  # 3 GB storage
+                ),
+            ],
         )
 
         plan_cost = calculator.calculate_plan_cost(plan)
@@ -199,9 +199,9 @@ class TestCostCalculator:
                     resource_type="t2.micro",
                     region="us-east-1",
                     quantity=1,
-                    estimated_monthly_usage=500
+                    estimated_monthly_usage=500,
                 )
-            ]
+            ],
         )
 
         validation_result = calculator.validate_plan_constraints(plan)
@@ -224,9 +224,9 @@ class TestCostCalculator:
                     resource_type="t2.micro",
                     region="us-east-1",
                     quantity=2,  # Two instances
-                    estimated_monthly_usage=744  # Each running 24/7
+                    estimated_monthly_usage=744,  # Each running 24/7
                 )
-            ]
+            ],
         )
 
         validation_result = calculator.validate_plan_constraints(plan)
@@ -252,7 +252,7 @@ class TestResourceRecommender:
                 limit_value=750,
                 period="monthly",
                 currency="USD",
-                cost_per_unit=Decimal("0.00")
+                cost_per_unit=Decimal("0.00"),
             ),
             Constraint(
                 provider="gcp",
@@ -263,7 +263,7 @@ class TestResourceRecommender:
                 limit_value=744,
                 period="monthly",
                 currency="USD",
-                cost_per_unit=Decimal("0.00")
+                cost_per_unit=Decimal("0.00"),
             ),
             Constraint(
                 provider="azure",
@@ -274,8 +274,8 @@ class TestResourceRecommender:
                 limit_value=750,
                 period="monthly",
                 currency="USD",
-                cost_per_unit=Decimal("0.00")
-            )
+                cost_per_unit=Decimal("0.00"),
+            ),
         ]
 
     def test_recommender_creation(self, sample_constraints):
@@ -293,13 +293,15 @@ class TestResourceRecommender:
             "service_type": "compute",
             "estimated_monthly_hours": 500,
             "preferred_providers": ["aws", "gcp"],
-            "preferred_regions": ["us-east-1", "us-central1"]
+            "preferred_regions": ["us-east-1", "us-central1"],
         }
 
         recommendations = recommender.recommend_resources(requirements)
 
         assert len(recommendations) > 0
-        assert all(r.service == "ec2" or r.service == "compute" for r in recommendations)
+        assert all(
+            r.service == "ec2" or r.service == "compute" for r in recommendations
+        )
         assert all(r.provider in ["aws", "gcp"] for r in recommendations)
 
         # Should prioritize free tier options
@@ -334,14 +336,14 @@ class TestResourceRecommender:
                 region="us-east-1",
                 current_usage=400,
                 period_start=datetime(2024, 1, 1, tzinfo=UTC),
-                period_end=datetime(2024, 1, 31, tzinfo=UTC)
+                period_end=datetime(2024, 1, 31, tzinfo=UTC),
             )
         ]
 
         requirements = {
             "service_type": "compute",
             "estimated_monthly_hours": 400,  # Would exceed AWS free tier
-            "max_cost": Decimal("0.00")
+            "max_cost": Decimal("0.00"),
         }
 
         recommendations = recommender.recommend_resources(requirements, existing_usage)
@@ -381,7 +383,7 @@ class TestPlanOptimizer:
                 limit_value=750,
                 period="monthly",
                 currency="USD",
-                cost_per_unit=Decimal("0.00")
+                cost_per_unit=Decimal("0.00"),
             ),
             Constraint(
                 provider="aws",
@@ -392,7 +394,7 @@ class TestPlanOptimizer:
                 limit_value=5,
                 period="monthly",
                 currency="USD",
-                cost_per_unit=Decimal("0.00")
+                cost_per_unit=Decimal("0.00"),
             ),
             Constraint(
                 provider="gcp",
@@ -403,8 +405,8 @@ class TestPlanOptimizer:
                 limit_value=744,
                 period="monthly",
                 currency="USD",
-                cost_per_unit=Decimal("0.00")
-            )
+                cost_per_unit=Decimal("0.00"),
+            ),
         ]
 
     def test_optimizer_creation(self, sample_constraints):
@@ -428,9 +430,9 @@ class TestPlanOptimizer:
                     resource_type="t2.micro",
                     region="us-east-1",
                     quantity=2,  # Two instances exceeding free tier
-                    estimated_monthly_usage=744
+                    estimated_monthly_usage=744,
                 )
-            ]
+            ],
         )
 
         optimized_plan = optimizer.optimize_for_cost(initial_plan)
@@ -448,8 +450,8 @@ class TestPlanOptimizer:
 
         requirements = {
             "compute_hours": 1000,  # Exceeds single provider free tier
-            "storage_gb": 10,       # Exceeds free tier
-            "max_budget": Decimal("5.00")
+            "storage_gb": 10,  # Exceeds free tier
+            "max_budget": Decimal("5.00"),
         }
 
         optimized_plan = optimizer.optimize_within_budget(requirements)
@@ -465,7 +467,7 @@ class TestPlanOptimizer:
 
         requirements = {
             "compute_hours": 1200,  # Needs multiple providers for free tier
-            "storage_gb": 3         # Within free tier
+            "storage_gb": 3,  # Within free tier
         }
 
         free_tier_plan = optimizer.optimize_free_tier_only(requirements)
@@ -486,10 +488,281 @@ class TestPlanOptimizer:
 
         requirements = {
             "compute_hours": 10000,  # Far exceeds all free tiers
-            "max_budget": Decimal("0.00")  # Must be free
+            "max_budget": Decimal("0.00"),  # Must be free
         }
 
         result = optimizer.optimize_within_budget(requirements)
 
         # Should return None or empty plan for impossible requirements
         assert result is None or len(result.resources) == 0
+
+
+class TestCapacityAwarePlanning:
+    """Test integration of capacity detection with planning components."""
+
+    @pytest.fixture
+    def sample_constraints(self):
+        """Provide sample constraints for capacity-aware testing."""
+        return [
+            Constraint(
+                provider="aws",
+                service="ec2",
+                resource_type="t2.micro",
+                region="us-east-1",
+                limit_type="free_tier_hours",
+                limit_value=750,
+                period="monthly",
+                currency="USD",
+                cost_per_unit=Decimal("0.00"),
+            ),
+            Constraint(
+                provider="gcp",
+                service="compute",
+                resource_type="f1-micro",
+                region="us-central1",
+                limit_type="free_tier_hours",
+                limit_value=744,
+                period="monthly",
+                currency="USD",
+                cost_per_unit=Decimal("0.00"),
+            ),
+            Constraint(
+                provider="azure",
+                service="compute",
+                resource_type="Standard_B1s",
+                region="eastus",
+                limit_type="free_tier_hours",
+                limit_value=750,
+                period="monthly",
+                currency="USD",
+                cost_per_unit=Decimal("0.00"),
+            ),
+        ]
+
+    @pytest.fixture
+    def mock_capacity_aggregator(self):
+        """Create a mock capacity aggregator for testing."""
+        from datetime import UTC, datetime
+        from unittest.mock import Mock
+
+        from sentinel.capacity.checker import CapacityResult
+
+        aggregator = Mock()
+
+        # Mock capacity results - AWS has capacity, GCP doesn't, Azure has high capacity
+        aws_result = CapacityResult(
+            region="us-east-1",
+            resource_type="t2.micro",
+            available=True,
+            capacity_level=0.6,
+            last_checked=datetime.now(UTC),
+        )
+        gcp_result = CapacityResult(
+            region="us-central1",
+            resource_type="f1-micro",
+            available=False,
+            capacity_level=0.0,
+            last_checked=datetime.now(UTC),
+        )
+        azure_result = CapacityResult(
+            region="eastus",
+            resource_type="Standard_B1s",
+            available=True,
+            capacity_level=0.9,
+            last_checked=datetime.now(UTC),
+        )
+
+        def mock_check_availability(provider, region, resource_type):
+            if provider == "aws":
+                return aws_result
+            elif provider == "gcp":
+                return gcp_result
+            elif provider == "azure":
+                return azure_result
+
+        aggregator.check_availability.side_effect = mock_check_availability
+        return aggregator
+
+    def test_capacity_aware_cost_calculator_creation(
+        self, sample_constraints, mock_capacity_aggregator
+    ):
+        """Test creating a capacity-aware cost calculator."""
+        from sentinel.planner.cost_calculator import CapacityAwareCostCalculator
+
+        calculator = CapacityAwareCostCalculator(
+            sample_constraints, mock_capacity_aggregator
+        )
+
+        assert calculator is not None
+        assert len(calculator.constraints) == 3
+        assert calculator.capacity_aggregator is mock_capacity_aggregator
+
+    def test_capacity_aware_cost_calculation_available_resource(
+        self, sample_constraints, mock_capacity_aggregator
+    ):
+        """Test cost calculation for resources with available capacity."""
+        from sentinel.planner.cost_calculator import CapacityAwareCostCalculator
+
+        calculator = CapacityAwareCostCalculator(
+            sample_constraints, mock_capacity_aggregator
+        )
+
+        resource = Resource(
+            provider="aws",
+            service="ec2",
+            resource_type="t2.micro",
+            region="us-east-1",
+            quantity=1,
+            estimated_monthly_usage=500,
+        )
+
+        cost_result = calculator.calculate_resource_cost(resource)
+
+        # Should include capacity information in result
+        assert hasattr(cost_result, "capacity_available")
+        assert hasattr(cost_result, "capacity_level")
+        assert cost_result.capacity_available is True
+        assert cost_result.capacity_level == 0.6
+
+    def test_capacity_aware_cost_calculation_unavailable_resource(
+        self, sample_constraints, mock_capacity_aggregator
+    ):
+        """Test cost calculation for resources without available capacity."""
+        from sentinel.planner.cost_calculator import CapacityAwareCostCalculator
+
+        calculator = CapacityAwareCostCalculator(
+            sample_constraints, mock_capacity_aggregator
+        )
+
+        resource = Resource(
+            provider="gcp",
+            service="compute",
+            resource_type="f1-micro",
+            region="us-central1",
+            quantity=1,
+            estimated_monthly_usage=500,
+        )
+
+        cost_result = calculator.calculate_resource_cost(resource)
+
+        # Should mark as unavailable and potentially adjust cost/feasibility
+        assert cost_result.capacity_available is False
+        assert cost_result.capacity_level == 0.0
+
+    def test_capacity_aware_recommender_creation(
+        self, sample_constraints, mock_capacity_aggregator
+    ):
+        """Test creating a capacity-aware resource recommender."""
+        from sentinel.planner.recommender import CapacityAwareResourceRecommender
+
+        recommender = CapacityAwareResourceRecommender(
+            sample_constraints, mock_capacity_aggregator
+        )
+
+        assert recommender is not None
+        assert len(recommender.constraints) == 3
+        assert recommender.capacity_aggregator is mock_capacity_aggregator
+
+    def test_capacity_aware_recommendations_filter_unavailable(
+        self, sample_constraints, mock_capacity_aggregator
+    ):
+        """Test that capacity-aware recommender filters out unavailable resources."""
+        from sentinel.planner.recommender import CapacityAwareResourceRecommender
+
+        recommender = CapacityAwareResourceRecommender(
+            sample_constraints, mock_capacity_aggregator
+        )
+
+        requirements = {
+            "service_type": "compute",
+            "estimated_monthly_hours": 500,
+            "preferred_providers": ["aws", "gcp", "azure"],
+        }
+
+        recommendations = recommender.recommend_resources(requirements)
+
+        # Should exclude GCP since it has no capacity
+        provider_names = {r.provider for r in recommendations}
+        assert "gcp" not in provider_names
+        assert "aws" in provider_names or "azure" in provider_names
+
+    def test_capacity_aware_recommendations_prioritize_high_capacity(
+        self, sample_constraints, mock_capacity_aggregator
+    ):
+        """Test that capacity-aware recommender prioritizes high-capacity resources."""
+        from sentinel.planner.recommender import CapacityAwareResourceRecommender
+
+        recommender = CapacityAwareResourceRecommender(
+            sample_constraints, mock_capacity_aggregator
+        )
+
+        requirements = {
+            "service_type": "compute",
+            "estimated_monthly_hours": 500,
+            "preferred_providers": [
+                "aws",
+                "azure",
+            ],  # Both available, Azure has higher capacity
+        }
+
+        recommendations = recommender.recommend_resources(requirements)
+
+        # Azure should be ranked higher due to better capacity (0.9 vs 0.6)
+        if len(recommendations) >= 2:
+            assert recommendations[0].provider == "azure"
+
+    def test_capacity_aware_optimizer_creation(
+        self, sample_constraints, mock_capacity_aggregator
+    ):
+        """Test creating a capacity-aware plan optimizer."""
+        from sentinel.planner.optimizer import CapacityAwarePlanOptimizer
+
+        optimizer = CapacityAwarePlanOptimizer(
+            sample_constraints, mock_capacity_aggregator
+        )
+
+        assert optimizer is not None
+        assert len(optimizer.constraints) == 3
+        assert optimizer.capacity_aggregator is mock_capacity_aggregator
+
+    def test_capacity_aware_optimization_avoids_unavailable_resources(
+        self, sample_constraints, mock_capacity_aggregator
+    ):
+        """Test that capacity-aware optimizer avoids resources without capacity."""
+        from sentinel.planner.optimizer import CapacityAwarePlanOptimizer
+
+        optimizer = CapacityAwarePlanOptimizer(
+            sample_constraints, mock_capacity_aggregator
+        )
+
+        requirements = {
+            "compute_hours": 1000,
+            "preferred_providers": ["aws", "gcp", "azure"],
+        }
+
+        optimized_plan = optimizer.optimize_with_capacity_constraints(requirements)
+
+        # Plan should not include GCP resources due to lack of capacity
+        gcp_resources = [r for r in optimized_plan.resources if r.provider == "gcp"]
+        assert len(gcp_resources) == 0
+
+    def test_capacity_aware_optimization_prefers_high_capacity(
+        self, sample_constraints, mock_capacity_aggregator
+    ):
+        """Test that capacity-aware optimizer prefers high-capacity resources."""
+        from sentinel.planner.optimizer import CapacityAwarePlanOptimizer
+
+        optimizer = CapacityAwarePlanOptimizer(
+            sample_constraints, mock_capacity_aggregator
+        )
+
+        requirements = {
+            "compute_hours": 500,  # Can be satisfied by single provider
+        }
+
+        optimized_plan = optimizer.optimize_with_capacity_constraints(requirements)
+
+        # Should prefer Azure (0.9 capacity) over AWS (0.6 capacity)
+        if optimized_plan.resources:
+            primary_provider = optimized_plan.resources[0].provider
+            assert primary_provider == "azure"

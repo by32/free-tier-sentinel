@@ -1,6 +1,7 @@
 """Cost calculation engine for free-tier planning."""
 
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
 
 from sentinel.constraints.query import ConstraintQuery
@@ -10,6 +11,7 @@ from sentinel.models.core import Constraint, Plan, Resource, Usage
 @dataclass
 class ResourceCostResult:
     """Result of resource cost calculation."""
+
     resource: Resource
     total_cost: Decimal
     is_free_tier: bool
@@ -22,6 +24,7 @@ class ResourceCostResult:
 @dataclass
 class PlanCostResult:
     """Result of plan cost calculation."""
+
     plan: Plan
     total_cost: Decimal
     resource_costs: list[ResourceCostResult]
@@ -30,6 +33,7 @@ class PlanCostResult:
 @dataclass
 class ValidationResult:
     """Result of plan constraint validation."""
+
     is_valid: bool
     violations: list[str]
     total_estimated_cost: Decimal
@@ -44,15 +48,12 @@ class CostCalculator:
         self.query = ConstraintQuery(constraints)
 
     def calculate_resource_cost(
-        self,
-        resource: Resource,
-        existing_usage: list[Usage] | None = None
+        self, resource: Resource, existing_usage: list[Usage] | None = None
     ) -> ResourceCostResult:
         """Calculate cost for a single resource."""
         # Find matching constraint
         matching_constraints = (
-            self.query
-            .by_provider(resource.provider)
+            self.query.by_provider(resource.provider)
             .by_service(resource.service)
             .by_resource_type(resource.resource_type)
         )
@@ -68,7 +69,7 @@ class CostCalculator:
             return ResourceCostResult(
                 resource=resource,
                 total_cost=Decimal("0.00"),  # Placeholder - would need pricing data
-                is_free_tier=False
+                is_free_tier=False,
             )
 
         # Use the first matching constraint (could be enhanced with priority logic)
@@ -78,10 +79,12 @@ class CostCalculator:
         used_quota = 0
         if existing_usage:
             for usage in existing_usage:
-                if (usage.provider == resource.provider and
-                    usage.service == resource.service and
-                    usage.resource_type == resource.resource_type and
-                    (constraint.region == "*" or usage.region == resource.region)):
+                if (
+                    usage.provider == resource.provider
+                    and usage.service == resource.service
+                    and usage.resource_type == resource.resource_type
+                    and (constraint.region == "*" or usage.region == resource.region)
+                ):
                     used_quota += usage.current_usage
 
         # Calculate available free tier quota
@@ -109,7 +112,11 @@ class CostCalculator:
             is_free_tier = False
 
         # Calculate usage percentage
-        usage_percentage = (total_usage / constraint.limit_value * 100.0) if constraint.limit_value > 0 else 100.0
+        usage_percentage = (
+            (total_usage / constraint.limit_value * 100.0)
+            if constraint.limit_value > 0
+            else 100.0
+        )
 
         return ResourceCostResult(
             resource=resource,
@@ -118,13 +125,11 @@ class CostCalculator:
             constraint_used=constraint,
             usage_percentage=usage_percentage,
             free_tier_hours=int(free_tier_usage),
-            overage_hours=int(overage_usage)
+            overage_hours=int(overage_usage),
         )
 
     def calculate_plan_cost(
-        self,
-        plan: Plan,
-        existing_usage: list[Usage] | None = None
+        self, plan: Plan, existing_usage: list[Usage] | None = None
     ) -> PlanCostResult:
         """Calculate total cost for a complete plan."""
         resource_costs = []
@@ -136,9 +141,7 @@ class CostCalculator:
             total_cost += cost_result.total_cost
 
         return PlanCostResult(
-            plan=plan,
-            total_cost=total_cost,
-            resource_costs=resource_costs
+            plan=plan, total_cost=total_cost, resource_costs=resource_costs
         )
 
     def validate_plan_constraints(self, plan: Plan) -> ValidationResult:
@@ -158,24 +161,24 @@ class CostCalculator:
                     cost_result.constraint_used.provider,
                     cost_result.constraint_used.service,
                     cost_result.constraint_used.resource_type,
-                    cost_result.constraint_used.region
+                    cost_result.constraint_used.region,
                 )
 
                 if constraint_key not in constraint_usage:
                     constraint_usage[constraint_key] = {
-                        'constraint': cost_result.constraint_used,
-                        'total_usage': 0,
-                        'resources': []
+                        "constraint": cost_result.constraint_used,
+                        "total_usage": 0,
+                        "resources": [],
                     }
 
                 usage = resource.quantity * resource.estimated_monthly_usage
-                constraint_usage[constraint_key]['total_usage'] += usage
-                constraint_usage[constraint_key]['resources'].append(resource)
+                constraint_usage[constraint_key]["total_usage"] += usage
+                constraint_usage[constraint_key]["resources"].append(resource)
 
         # Check for constraint violations
         for _constraint_key, usage_info in constraint_usage.items():
-            constraint = usage_info['constraint']
-            total_usage = usage_info['total_usage']
+            constraint = usage_info["constraint"]
+            total_usage = usage_info["total_usage"]
 
             if total_usage > constraint.limit_value:
                 overage = total_usage - constraint.limit_value
@@ -189,5 +192,58 @@ class CostCalculator:
         return ValidationResult(
             is_valid=len(violations) == 0,
             violations=violations,
-            total_estimated_cost=total_cost
+            total_estimated_cost=total_cost,
+        )
+
+
+@dataclass
+class CapacityAwareResourceCostResult(ResourceCostResult):
+    """Extended cost result with capacity information."""
+
+    capacity_available: bool = False
+    capacity_level: float = 0.0
+    capacity_last_checked: datetime | None = None
+
+
+class CapacityAwareCostCalculator(CostCalculator):
+    """Cost calculator that considers capacity availability."""
+
+    def __init__(self, constraints: list[Constraint], capacity_aggregator):
+        """Initialize calculator with constraints and capacity aggregator."""
+        super().__init__(constraints)
+        self.capacity_aggregator = capacity_aggregator
+
+    def calculate_resource_cost(
+        self, resource: Resource, existing_usage: list[Usage] | None = None
+    ) -> CapacityAwareResourceCostResult:
+        """Calculate cost for a single resource including capacity check."""
+        # First get the basic cost calculation
+        basic_result = super().calculate_resource_cost(resource, existing_usage)
+
+        # Check capacity availability
+        try:
+            capacity_result = self.capacity_aggregator.check_availability(
+                resource.provider, resource.region, resource.resource_type
+            )
+            capacity_available = capacity_result.available
+            capacity_level = capacity_result.capacity_level
+            capacity_last_checked = capacity_result.last_checked
+        except Exception:
+            # If capacity check fails, assume unavailable for safety
+            capacity_available = False
+            capacity_level = 0.0
+            capacity_last_checked = None
+
+        # Create enhanced result
+        return CapacityAwareResourceCostResult(
+            resource=basic_result.resource,
+            total_cost=basic_result.total_cost,
+            is_free_tier=basic_result.is_free_tier,
+            constraint_used=basic_result.constraint_used,
+            usage_percentage=basic_result.usage_percentage,
+            free_tier_hours=basic_result.free_tier_hours,
+            overage_hours=basic_result.overage_hours,
+            capacity_available=capacity_available,
+            capacity_level=capacity_level,
+            capacity_last_checked=capacity_last_checked,
         )
