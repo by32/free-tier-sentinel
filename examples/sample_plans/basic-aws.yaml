@@ -1,0 +1,23 @@
+# Basic AWS Free-Tier Deployment Plan
+# Usage: uv run sentinel plan --config examples/sample_plans/basic-aws.yaml --dry-run
+
+plan:
+  name: "basic-aws-free-tier"
+  description: "Simple AWS free-tier deployment with EC2 and S3"
+
+resources:
+  # Free-tier EC2 instance
+  - provider: aws
+    service: ec2
+    resource_type: t2.micro
+    region: us-east-1
+    quantity: 1
+    estimated_monthly_usage: 100  # hours
+
+  # Free-tier S3 storage
+  - provider: aws
+    service: s3
+    resource_type: standard_storage
+    region: us-east-1
+    quantity: 1
+    estimated_monthly_usage: 5  # GB

@@ -1,0 +1,52 @@
+# Multi-Cloud Free-Tier Deployment Plan
+# Usage: uv run sentinel plan --config examples/sample_plans/multi-cloud.yaml --dry-run
+
+plan:
+  name: "multi-cloud-free-tier"
+  description: "Free-tier resources across AWS, GCP, and Azure"
+
+resources:
+  # AWS Resources
+  - provider: aws
+    service: ec2
+    resource_type: t2.micro
+    region: us-east-1
+    quantity: 1
+    estimated_monthly_usage: 100
+    
+  - provider: aws
+    service: s3
+    resource_type: standard_storage
+    region: us-east-1
+    quantity: 1
+    estimated_monthly_usage: 5
+
+  # Google Cloud Platform Resources
+  - provider: gcp
+    service: compute
+    resource_type: e2-micro
+    region: us-central1
+    quantity: 1
+    estimated_monthly_usage: 100
+    
+  - provider: gcp
+    service: storage
+    resource_type: standard_storage
+    region: us-central1
+    quantity: 1
+    estimated_monthly_usage: 5
+
+  # Microsoft Azure Resources
+  - provider: azure
+    service: vm
+    resource_type: Standard_B1s
+    region: eastus
+    quantity: 1
+    estimated_monthly_usage: 100
+    
+  - provider: azure
+    service: storage
+    resource_type: standard_storage
+    region: eastus
+    quantity: 1
+    estimated_monthly_usage: 5
