@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from .planning import InteractivePlanner
+from .enhanced_wizard import EnhancedInteractivePlanner
 from .config import ConfigLoader
 from .plan_manager import PlanManager
 from .output import PlanFormatter, ColoredOutput
@@ -19,15 +20,16 @@ def cli():
 
 
 @cli.command()
-@click.option('--interactive', is_flag=True, help='Launch interactive planning wizard')
+@click.option('--interactive', is_flag=True, help='Launch enhanced interactive planning wizard')
 @click.option('--config', type=click.Path(exists=True), help='Load plan from configuration file')
 @click.option('--dry-run', is_flag=True, help='Validate plan without provisioning')
 @click.option('--provider', type=click.Choice(['aws', 'gcp', 'azure']), help='Cloud provider')
 @click.option('--region', help='Target region')
 @click.option('--resource', multiple=True, help='Resource specification (service:type:quantity)')
 @click.option('--output', type=click.Path(), help='Save plan to file')
+@click.option('--enhanced', is_flag=True, help='Use enhanced wizard with better UI (default for --interactive)')
 def plan(interactive: bool, config: Optional[str], dry_run: bool, provider: Optional[str], 
-         region: Optional[str], resource: tuple, output: Optional[str]):
+         region: Optional[str], resource: tuple, output: Optional[str], enhanced: bool):
     """Create a deployment plan for cloud resources."""
     output_handler = ColoredOutput()
     
@@ -35,9 +37,78 @@ def plan(interactive: bool, config: Optional[str], dry_run: bool, provider: Opti
         deployment_plan = None
         
         if interactive:
-            # Launch interactive wizard
-            planner = InteractivePlanner()
+            # Launch interactive wizard (enhanced by default)
+            if enhanced or True:  # Default to enhanced for better UX
+                planner = EnhancedInteractivePlanner()
+            else:
+                planner = InteractivePlanner()
             deployment_plan = planner.create_plan()
+            
+            # Show the created plan
+            output_handler.success("✅ Plan created successfully!")
+            formatter = PlanFormatter()
+            formatted_plan = formatter.format_plan(deployment_plan)
+            click.echo(formatted_plan)
+            
+            # Auto-save the plan
+            from datetime import datetime, UTC
+            timestamp = datetime.now(UTC).strftime('%Y%m%d-%H%M%S')
+            plan_filename = f"{deployment_plan.name}-{timestamp}.json"
+            manager = PlanManager()
+            manager.save_plan(deployment_plan, Path(plan_filename))
+            output_handler.info(f"Plan automatically saved as: {plan_filename}")
+            
+            # Ask user what to do next
+            click.echo("\nWhat would you like to do next?")
+            next_action = click.prompt(
+                "Choose an action",
+                type=click.Choice(['provision', 'dry-run', 'save-only']),
+                default='dry-run',
+                show_choices=True
+            )
+            
+            if next_action == 'provision':
+                # Ask for confirmation since this will create real resources
+                click.echo("\n⚠️  WARNING: This will create actual cloud resources!")
+                click.echo("Make sure you have valid cloud credentials configured.")
+                
+                if click.confirm("Do you want to proceed with provisioning real resources?"):
+                    # Execute provisioning directly
+                    from sentinel.provisioning.engine import DefaultProvisioningEngine
+                    engine = DefaultProvisioningEngine()
+                    
+                    output_handler.info(f"🚀 Starting provisioning for plan: {deployment_plan.name}")
+                    
+                    try:
+                        plan_result = engine.provision_plan(deployment_plan)
+                        
+                        if plan_result.state.value == "ready":
+                            output_handler.success("🎉 All resources provisioned successfully!")
+                        else:
+                            output_handler.error("❌ Some resources failed to provision")
+                        
+                        output_handler.info(f"Deployment ID: {plan_result.deployment_id}")
+                        output_handler.info(f"Check status with: uv run sentinel status --deployment-id {plan_result.deployment_id}")
+                        
+                    except Exception as e:
+                        output_handler.error(f"Provisioning failed: {str(e)}")
+                        output_handler.info(f"You can try again with: uv run sentinel provision --plan-file {plan_filename}")
+                else:
+                    output_handler.info("Provisioning cancelled.")
+                    output_handler.info(f"To provision later: uv run sentinel provision --plan-file {plan_filename}")
+                
+                return  # Exit early since we handled everything
+                
+            elif next_action == 'dry-run':
+                # Set dry_run flag to continue with validation below
+                dry_run = True
+                output_handler.info("🔍 Running dry-run validation...")
+                
+            elif next_action == 'save-only':
+                output_handler.success(f"Plan saved as {plan_filename}")
+                output_handler.info(f"To validate: uv run sentinel plan --config {plan_filename} --dry-run")
+                output_handler.info(f"To provision: uv run sentinel provision --plan-file {plan_filename}")
+                return
             
         elif config:
             # Load from configuration file
@@ -83,6 +154,8 @@ def plan(interactive: bool, config: Optional[str], dry_run: bool, provider: Opti
             manager.save_plan(deployment_plan, Path(output))
             output_handler.success(f"Plan saved to {output}")
             
+    except KeyboardInterrupt:
+        output_handler.info("Plan creation cancelled by user.")
     except Exception as e:
         output_handler.error(f"Failed to create plan: {str(e)}")
 
