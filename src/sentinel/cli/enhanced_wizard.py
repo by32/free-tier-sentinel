@@ -274,21 +274,67 @@ class EnhancedInteractivePlanner:
             if not resource_type:
                 continue
             
-            # Get quantity and usage
-            quantity = questionary.text(
-                "How many instances?",
-                default="1",
-                validate=lambda x: x.isdigit() and int(x) > 0
-            ).ask()
-            
-            if not quantity:
-                continue
+            # Get quantity and usage based on resource type
+            if category == 'compute':
+                # For compute resources, ask for number of instances
+                quantity = questionary.text(
+                    "How many instances?",
+                    default="1",
+                    validate=lambda x: x.isdigit() and int(x) > 0
+                ).ask()
                 
-            usage = questionary.text(
-                "Estimated monthly usage (hours for compute, GB for storage)?",
-                default="100",
-                validate=lambda x: x.isdigit() and int(x) > 0
-            ).ask()
+                if not quantity:
+                    continue
+                    
+                usage = questionary.text(
+                    "Estimated monthly usage in hours?",
+                    default="750",  # Full month for free tier
+                    validate=lambda x: x.isdigit() and int(x) > 0
+                ).ask()
+                
+            elif category == 'storage':
+                # For storage, quantity is always 1 (one storage account/bucket)
+                quantity = "1"
+                
+                usage = questionary.text(
+                    "Storage size in GB?",
+                    default="5",  # Free tier limit
+                    validate=lambda x: x.isdigit() and int(x) > 0
+                ).ask()
+                
+            elif category == 'database':
+                # For databases, ask for number of instances
+                quantity = questionary.text(
+                    "How many database instances?",
+                    default="1",
+                    validate=lambda x: x.isdigit() and int(x) > 0
+                ).ask()
+                
+                if not quantity:
+                    continue
+                    
+                usage = questionary.text(
+                    "Estimated monthly usage in hours?",
+                    default="750",  # Full month for free tier
+                    validate=lambda x: x.isdigit() and int(x) > 0
+                ).ask()
+            
+            else:
+                # Default case
+                quantity = questionary.text(
+                    "How many?",
+                    default="1",
+                    validate=lambda x: x.isdigit() and int(x) > 0
+                ).ask()
+                
+                if not quantity:
+                    continue
+                    
+                usage = questionary.text(
+                    "Estimated monthly usage?",
+                    default="100",
+                    validate=lambda x: x.isdigit() and int(x) > 0
+                ).ask()
             
             if not usage:
                 continue
@@ -305,8 +351,17 @@ class EnhancedInteractivePlanner:
             
             self.resources.append(resource)
             
-            # Show added resource
-            self.console.print(f"✅ Added: {resource.service} {resource.resource_type} x{resource.quantity}", style="green")
+            # Show added resource with appropriate description
+            if category == 'compute':
+                desc = f"{resource.quantity} instance(s), {resource.estimated_monthly_usage} hours/month"
+            elif category == 'storage':
+                desc = f"{resource.estimated_monthly_usage}GB storage"
+            elif category == 'database':
+                desc = f"{resource.quantity} instance(s), {resource.estimated_monthly_usage} hours/month"
+            else:
+                desc = f"quantity: {resource.quantity}, usage: {resource.estimated_monthly_usage}"
+            
+            self.console.print(f"✅ Added: {resource.service} {resource.resource_type} ({desc})", style="green")
             
         if not self.resources:
             self.console.print("⚠️  No resources added. Adding a default t2.micro instance.", style="yellow")
@@ -411,11 +466,22 @@ class EnhancedInteractivePlanner:
         table.add_column("Region", style="blue")
         
         for resource in plan.resources:
+            # Determine usage unit based on service type
+            if resource.service in ['s3', 'storage', 'blob']:
+                usage_str = f"{resource.estimated_monthly_usage}GB"
+                quantity_str = "-"  # Storage doesn't have multiple instances
+            elif resource.service in ['ec2', 'compute', 'vm', 'rds', 'database']:
+                usage_str = f"{resource.estimated_monthly_usage}h"
+                quantity_str = str(resource.quantity)
+            else:
+                usage_str = str(resource.estimated_monthly_usage)
+                quantity_str = str(resource.quantity)
+            
             table.add_row(
                 resource.service,
                 resource.resource_type,
-                str(resource.quantity),
-                f"{resource.estimated_monthly_usage}h",
+                quantity_str,
+                usage_str,
                 resource.region
             )
         
