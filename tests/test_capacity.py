@@ -176,7 +176,7 @@ class TestAWSCapacityChecker:
         with patch("boto3.client", return_value=mock_ec2_client):
             checker = AWSCapacityChecker()
 
-            with pytest.raises(Exception):  # Should handle API errors gracefully
+            with pytest.raises(Exception, match="AWS API rate limit"):  # Should handle API errors gracefully
                 checker.check_availability("us-east-1", "t2.micro")
 
 

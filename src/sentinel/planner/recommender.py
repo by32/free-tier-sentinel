@@ -171,7 +171,7 @@ class CapacityAwareResourceRecommender(ResourceRecommender):
         super().__init__(constraints)
         self.capacity_aggregator = capacity_aggregator
 
-    def recommend_resources(
+    def recommend_resources(  # type: ignore[override]
         self, requirements: dict[str, Any], existing_usage: list[Usage] | None = None
     ) -> list[CapacityAwareResourceRecommendation]:
         """Recommend resources based on requirements and capacity availability."""

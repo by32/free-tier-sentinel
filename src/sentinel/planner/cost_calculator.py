@@ -3,9 +3,17 @@
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
+from typing import TypedDict
 
 from sentinel.constraints.query import ConstraintQuery
 from sentinel.models.core import Constraint, Plan, Resource, Usage
+
+
+class ConstraintUsageInfo(TypedDict):
+    """Type for constraint usage tracking."""
+    constraint: Constraint
+    total_usage: int
+    resources: list[Resource]
 
 
 @dataclass
@@ -150,7 +158,7 @@ class CostCalculator:
         total_cost = Decimal("0.00")
 
         # Group resources by constraint to check aggregate limits
-        constraint_usage = {}
+        constraint_usage: dict[tuple[str, str, str, str], ConstraintUsageInfo] = {}
 
         for resource in plan.resources:
             cost_result = self.calculate_resource_cost(resource)

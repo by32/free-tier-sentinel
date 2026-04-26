@@ -1,22 +1,19 @@
 """Rich output formatting and progress display."""
 
-import sys
-from typing import Optional
 from rich.console import Console
-from rich.table import Table
-from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.panel import Panel
-from rich.text import Text
+from rich.progress import Progress, SpinnerColumn, TaskID, TextColumn
+from rich.table import Table
 
-from sentinel.models.core import Plan, Resource
+from sentinel.models.core import Plan
 
 
 class PlanFormatter:
     """Format deployment plans for display."""
-    
+
     def __init__(self):
         self.console = Console()
-    
+
     def format_plan(self, plan: Plan) -> str:
         """Format a deployment plan for console display."""
         # Create a table for resources
@@ -27,7 +24,7 @@ class PlanFormatter:
         table.add_column("Region", style="yellow")
         table.add_column("Quantity", justify="right", style="blue")
         table.add_column("Usage/Month", justify="right", style="red")
-        
+
         for resource in plan.resources:
             table.add_row(
                 resource.provider,
@@ -37,48 +34,48 @@ class PlanFormatter:
                 str(resource.quantity),
                 str(resource.estimated_monthly_usage)
             )
-        
+
         # Create panel with description
         panel = Panel(
             plan.description,
             title="Description",
             border_style="blue"
         )
-        
+
         # Capture output to string
         with self.console.capture() as capture:
             self.console.print(panel)
             self.console.print(table)
             self.console.print(f"\nEstimated Cost: ${plan.total_estimated_cost}")
-        
+
         return capture.get()
 
 
 class ProgressDisplay:
     """Display progress for long-running operations."""
-    
+
     def __init__(self):
-        self.progress: Optional[Progress] = None
-        self.task_id: Optional[int] = None
+        self.progress: Progress | None = None
+        self.task_id: TaskID | None = None
         self.current_step = 0
         self.total_steps = 0
         self.is_complete = False
-    
+
     def start_operation(self, description: str, total_steps: int):
         """Start a progress display for an operation."""
         self.total_steps = total_steps
         self.current_step = 0
         self.is_complete = False
-        
+
         self.progress = Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             console=Console()
         )
-        
+
         self.progress.start()
         self.task_id = self.progress.add_task(description, total=total_steps)
-    
+
     def update_progress(self, status_message: str):
         """Update progress with a status message."""
         if self.progress and self.task_id is not None:
@@ -88,7 +85,7 @@ class ProgressDisplay:
                 advance=1,
                 description=status_message
             )
-    
+
     def finish_operation(self, final_message: str):
         """Finish the progress display."""
         if self.progress and self.task_id is not None:
@@ -103,22 +100,22 @@ class ProgressDisplay:
 
 class ColoredOutput:
     """Provide colored console output for different message types."""
-    
+
     def __init__(self):
         self.console = Console()
-    
+
     def success(self, message: str):
         """Display a success message in green."""
         self.console.print(f"✅ {message}", style="green")
-    
+
     def error(self, message: str):
         """Display an error message in red."""
         self.console.print(f"❌ {message}", style="red")
-    
+
     def warning(self, message: str):
         """Display a warning message in yellow."""
         self.console.print(f"⚠️  {message}", style="yellow")
-    
+
     def info(self, message: str):
         """Display an info message in blue."""
         self.console.print(f"ℹ️  {message}", style="blue")

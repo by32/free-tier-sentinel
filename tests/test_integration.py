@@ -78,7 +78,7 @@ class TestConstraintIntegration:
             assert constraint.limit_value >= 0
 
             # All constraints should have valid periods
-            assert constraint.period in ["monthly", "daily", "yearly"]
+            assert constraint.period in ["monthly", "daily", "yearly", "always"]
 
             # All constraints should have valid currencies
             assert constraint.currency in ["USD", "EUR", "GBP"]

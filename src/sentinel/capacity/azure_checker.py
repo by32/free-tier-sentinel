@@ -68,7 +68,7 @@ class AzureCapacityChecker(CapacityChecker):
             )
 
         except Exception as e:
-            raise Exception(f"Azure API error: {str(e)}")
+            raise Exception(f"Azure API error: {str(e)}") from e
 
     def get_available_regions(self) -> list[str]:
         """Get list of available Azure regions."""

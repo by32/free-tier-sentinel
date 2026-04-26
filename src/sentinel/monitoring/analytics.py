@@ -1,11 +1,10 @@
 """Usage analytics and reporting engine."""
 
 import random
-from dataclasses import dataclass, field
-from datetime import datetime, UTC, timedelta
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from enum import Enum
-from typing import List, Dict
 
 from sentinel.models.core import Resource
 
@@ -47,7 +46,7 @@ class UsageReport:
     generated_at: datetime
     period_start: datetime
     period_end: datetime
-    resource_summaries: List[ResourceSummary]
+    resource_summaries: list[ResourceSummary]
     total_cost: Decimal
     total_usage_hours: float
 
@@ -75,11 +74,11 @@ class UsagePrediction:
 
 class UsageAnalyticsEngine:
     """Engine for usage analytics and reporting."""
-    
+
     def __init__(self):
         """Initialize the analytics engine."""
-        self._usage_data: Dict[str, List[UsageDataPoint]] = {}
-    
+        self._usage_data: dict[str, list[UsageDataPoint]] = {}
+
     def collect_usage_data(self, resource: Resource, resource_id: str) -> UsageDataPoint:
         """Collect usage data from a resource."""
         # Mock data collection - in reality, this would query cloud provider APIs
@@ -92,18 +91,18 @@ class UsageAnalyticsEngine:
             network_out=random.uniform(50, 500),   # MB
             disk_io=random.uniform(10, 100)        # IOPS
         )
-        
+
         if resource_id not in self._usage_data:
             self._usage_data[resource_id] = []
-        
+
         self._usage_data[resource_id].append(data_point)
-        
+
         return data_point
-    
-    def generate_report(self, resources: List[Resource], report_type: ReportType) -> UsageReport:
+
+    def generate_report(self, resources: list[Resource], report_type: ReportType) -> UsageReport:
         """Generate a usage report for the specified resources."""
         now = datetime.now(UTC)
-        
+
         # Determine report period
         if report_type == ReportType.DAILY:
             period_start = now - timedelta(days=1)
@@ -111,21 +110,21 @@ class UsageAnalyticsEngine:
             period_start = now - timedelta(weeks=1)
         else:  # MONTHLY
             period_start = now - timedelta(days=30)
-        
+
         resource_summaries = []
         total_cost = Decimal("0.00")
         total_usage_hours = 0.0
-        
+
         for resource in resources:
             # Mock resource ID
             resource_id = f"{resource.service}-{resource.resource_type}-{hash(resource.region) % 10000}"
-            
+
             # Calculate summary (mock data)
             usage_hours = random.uniform(50, 200)
             avg_cpu = random.uniform(20, 70)
             avg_memory = random.uniform(30, 80)
             cost = Decimal(str(random.uniform(1.0, 10.0)))
-            
+
             summary = ResourceSummary(
                 resource=resource,
                 resource_id=resource_id,
@@ -134,11 +133,11 @@ class UsageAnalyticsEngine:
                 average_memory_utilization=avg_memory,
                 total_cost=cost
             )
-            
+
             resource_summaries.append(summary)
             total_cost += cost
             total_usage_hours += usage_hours
-        
+
         return UsageReport(
             report_type=report_type,
             generated_at=now,
@@ -148,14 +147,14 @@ class UsageAnalyticsEngine:
             total_cost=total_cost,
             total_usage_hours=total_usage_hours
         )
-    
+
     def get_usage_trends(self, resource: Resource, days: int) -> UsageTrend:
         """Analyze usage trends for a resource."""
         # Mock trend analysis - in reality, this would analyze historical data
         average_usage = random.uniform(50, 150)
         peak_usage = average_usage * random.uniform(1.2, 2.0)
         variance = random.uniform(10, 30)
-        
+
         # Determine trend direction based on mock analysis
         trend_factor = random.uniform(0.8, 1.2)
         if trend_factor > 1.1:
@@ -164,7 +163,7 @@ class UsageAnalyticsEngine:
             direction = "decreasing"
         else:
             direction = "stable"
-        
+
         return UsageTrend(
             resource=resource,
             period_days=days,
@@ -173,15 +172,15 @@ class UsageAnalyticsEngine:
             peak_usage=peak_usage,
             usage_variance=variance
         )
-    
+
     def predict_future_usage(self, resource: Resource, days: int) -> UsagePrediction:
         """Predict future usage for a resource."""
         # Mock prediction - in reality, this would use ML models
         current_trend = self.get_usage_trends(resource, 7)  # Use last 7 days for prediction
-        
+
         # Simple linear extrapolation
         base_usage = current_trend.average_daily_usage
-        
+
         if current_trend.trend_direction == "increasing":
             predicted_usage = base_usage * 1.1 * days
             confidence = 0.75
@@ -191,7 +190,7 @@ class UsageAnalyticsEngine:
         else:
             predicted_usage = base_usage * days
             confidence = 0.85
-        
+
         return UsagePrediction(
             resource=resource,
             prediction_period_days=days,

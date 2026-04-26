@@ -1,0 +1,149 @@
+version: "1.0"
+provider: oci
+constraints:
+  # OCI Always Free Compute - ARM A1 Flex
+  # Total allowance: 4 OCPUs and 24 GB memory (can be split across instances)
+  - service: compute
+    resource_type: VM.Standard.A1.Flex
+    region: "*"
+    limit_type: free_tier_ocpus
+    limit_value: 4
+    period: always
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "ARM-based A1 Flex - 4 OCPUs total Always Free (can be 1x4, 2x2, 4x1, etc.)"
+
+  - service: compute
+    resource_type: VM.Standard.A1.Flex
+    region: "*"
+    limit_type: free_tier_memory_gb
+    limit_value: 24
+    period: always
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "ARM-based A1 Flex - 24 GB memory total Always Free"
+
+  # OCI Always Free Compute - AMD E2.1.Micro
+  # 2 instances always free
+  - service: compute
+    resource_type: VM.Standard.E2.1.Micro
+    region: "*"
+    limit_type: free_tier_instances
+    limit_value: 2
+    period: always
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "AMD-based E2.1.Micro - 2 instances Always Free (1/8 OCPU, 1 GB each)"
+
+  # OCI Always Free Block Storage
+  # 200 GB total block volume storage
+  - service: block_storage
+    resource_type: boot_volume
+    region: "*"
+    limit_type: free_tier_gb
+    limit_value: 200
+    period: always
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Block Volume storage - 200 GB total Always Free"
+
+  # OCI Always Free Object Storage
+  # 10 GB standard tier, 10 GB infrequent access
+  - service: object_storage
+    resource_type: standard
+    region: "*"
+    limit_type: free_tier_gb
+    limit_value: 10
+    period: always
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Object Storage Standard tier - 10 GB Always Free"
+
+  - service: object_storage
+    resource_type: infrequent_access
+    region: "*"
+    limit_type: free_tier_gb
+    limit_value: 10
+    period: always
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Object Storage Infrequent Access - 10 GB Always Free"
+
+  # OCI Always Free Database
+  # 2 Autonomous Databases with 1 OCPU and 20 GB storage each
+  - service: autonomous_database
+    resource_type: autonomous_db
+    region: "*"
+    limit_type: free_tier_instances
+    limit_value: 2
+    period: always
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Autonomous Database - 2 instances Always Free (1 OCPU, 20 GB each)"
+
+  # OCI Always Free Load Balancer
+  # 1 flexible load balancer with 10 Mbps
+  - service: load_balancer
+    resource_type: flexible
+    region: "*"
+    limit_type: free_tier_instances
+    limit_value: 1
+    period: always
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Flexible Load Balancer - 1 instance (10 Mbps) Always Free"
+
+  # OCI Always Free Networking
+  # Includes VCN, public IP, VPN, etc.
+  - service: networking
+    resource_type: vcn
+    region: "*"
+    limit_type: free_tier_instances
+    limit_value: 2
+    period: always
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Virtual Cloud Network - 2 VCNs Always Free"
+
+  - service: networking
+    resource_type: public_ip
+    region: "*"
+    limit_type: free_tier_instances
+    limit_value: 2
+    period: always
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Reserved Public IP - 2 IPs Always Free"
+
+  # OCI Always Free Outbound Data Transfer
+  # 10 TB per month
+  - service: networking
+    resource_type: outbound_transfer
+    region: "*"
+    limit_type: free_tier_tb
+    limit_value: 10
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Outbound Data Transfer - 10 TB/month Always Free"
+
+  # OCI Always Free Monitoring & Management
+  - service: monitoring
+    resource_type: metrics
+    region: "*"
+    limit_type: free_tier_metrics
+    limit_value: 500000000
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Monitoring - 500 million ingested datapoints/month Always Free"
+
+  - service: notifications
+    resource_type: messages
+    region: "*"
+    limit_type: free_tier_messages
+    limit_value: 1000000
+    period: monthly
+    currency: USD
+    cost_per_unit: "0.00"
+    description: "Notifications - 1 million messages/month Always Free"

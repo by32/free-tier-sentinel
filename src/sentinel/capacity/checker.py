@@ -15,9 +15,9 @@ class CapacityResult:
     available: bool
     capacity_level: float  # 0.0 to 1.0, representing available capacity
     last_checked: datetime
-    provider_specific_data: dict[str, Any] = None
+    provider_specific_data: dict[str, Any] | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.provider_specific_data is None:
             self.provider_specific_data = {}
 
@@ -30,7 +30,7 @@ class CapacityError:
     resource_type: str
     error_type: str
     error_message: str
-    retry_after: timedelta = None
+    retry_after: timedelta | None = None
 
 
 class CapacityChecker(ABC):

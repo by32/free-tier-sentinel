@@ -3,11 +3,11 @@
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime, UTC, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
-from sentinel.models.core import Resource, Plan
+from sentinel.models.core import Plan, Resource
 
 
 class ProvisioningState(Enum):
@@ -26,7 +26,7 @@ class ProvisioningError:
     provider: str
     error_type: str
     error_message: str
-    retry_after: Optional[timedelta] = None
+    retry_after: timedelta | None = None
     retry_suggested: bool = False
 
 
@@ -35,9 +35,9 @@ class ProvisioningResult:
     """Result of provisioning a single resource."""
     resource: Resource
     state: ProvisioningState
-    resource_id: Optional[str] = None
-    provisioned_at: Optional[datetime] = None
-    error: Optional[ProvisioningError] = None
+    resource_id: str | None = None
+    provisioned_at: datetime | None = None
+    error: ProvisioningError | None = None
     provider_specific_data: dict[str, Any] = field(default_factory=dict)
     capacity_checked: bool = False
 
@@ -46,16 +46,16 @@ class ProvisioningResult:
             self.provisioned_at = datetime.now(UTC)
 
 
-@dataclass 
+@dataclass
 class ProvisioningPlanResult:
     """Result of provisioning a complete deployment plan."""
     plan: Plan
     state: ProvisioningState
     deployment_id: str
     started_at: datetime
-    completed_at: Optional[datetime] = None
+    completed_at: datetime | None = None
     resource_results: list[ProvisioningResult] = field(default_factory=list)
-    
+
     def __post_init__(self):
         if self.deployment_id is None:
             self.deployment_id = f"deploy-{uuid.uuid4().hex[:8]}"
@@ -77,7 +77,7 @@ class ProvisioningEngine(ABC):
         raise NotImplementedError("Subclasses must implement provision_plan")
 
     @abstractmethod
-    def get_provisioning_status(self, deployment_id: str) -> Optional[ProvisioningPlanResult]:
+    def get_provisioning_status(self, deployment_id: str) -> ProvisioningPlanResult | None:
         """Get the current status of a deployment."""
         raise NotImplementedError("Subclasses must implement get_provisioning_status")
 
@@ -125,7 +125,7 @@ class DefaultProvisioningEngine(ProvisioningEngine):
     def provision_plan(self, plan: Plan) -> ProvisioningPlanResult:
         """Provision a complete deployment plan."""
         deployment_id = f"deploy-{uuid.uuid4().hex[:8]}"
-        
+
         plan_result = ProvisioningPlanResult(
             plan=plan,
             state=ProvisioningState.PROVISIONING,
@@ -143,7 +143,7 @@ class DefaultProvisioningEngine(ProvisioningEngine):
         for resource in plan.resources:
             result = self.provision_resource(resource)
             resource_results.append(result)
-            
+
             if result.state == ProvisioningState.FAILED:
                 all_successful = False
 
@@ -153,7 +153,7 @@ class DefaultProvisioningEngine(ProvisioningEngine):
 
         return plan_result
 
-    def get_provisioning_status(self, deployment_id: str) -> Optional[ProvisioningPlanResult]:
+    def get_provisioning_status(self, deployment_id: str) -> ProvisioningPlanResult | None:
         """Get the current status of a deployment."""
         return self._deployments.get(deployment_id)
 

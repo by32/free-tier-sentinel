@@ -28,6 +28,8 @@ class ConstraintLoader:
 
             # Convert to Constraint objects
             data = validation_result.data
+            if data is None:
+                raise ValueError("No data found in constraint file")
             constraints = []
 
             for constraint_data in data["constraints"]:

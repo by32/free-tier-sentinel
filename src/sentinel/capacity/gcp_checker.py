@@ -99,7 +99,7 @@ class GCPCapacityChecker(CapacityChecker):
             )
 
         except Exception as e:
-            raise Exception(f"GCP API error: {str(e)}")
+            raise Exception(f"GCP API error: {str(e)}") from e
 
     def get_available_regions(self) -> list[str]:
         """Get list of available GCP regions."""

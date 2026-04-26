@@ -78,9 +78,9 @@ class AWSCapacityChecker(CapacityChecker):
             error_message = e.response["Error"]["Message"]
 
             if error_code in ["Throttling", "RequestLimitExceeded"]:
-                raise Exception(f"AWS API rate limit: {error_message}")
+                raise Exception(f"AWS API rate limit: {error_message}") from e
             else:
-                raise Exception(f"AWS API error: {error_code} - {error_message}")
+                raise Exception(f"AWS API error: {error_code} - {error_message}") from e
 
     def get_available_regions(self) -> list[str]:
         """Get list of available AWS regions."""
@@ -88,7 +88,7 @@ class AWSCapacityChecker(CapacityChecker):
             response = self.ec2_client.describe_regions()
             return [region["RegionName"] for region in response["Regions"]]
         except ClientError as e:
-            raise Exception(f"Failed to get AWS regions: {e}")
+            raise Exception(f"Failed to get AWS regions: {e}") from e
 
     def get_supported_resource_types(self) -> list[str]:
         """Get list of supported EC2 instance types."""
@@ -96,4 +96,4 @@ class AWSCapacityChecker(CapacityChecker):
             response = self.ec2_client.describe_instance_types()
             return [instance["InstanceType"] for instance in response["InstanceTypes"]]
         except ClientError as e:
-            raise Exception(f"Failed to get AWS instance types: {e}")
+            raise Exception(f"Failed to get AWS instance types: {e}") from e

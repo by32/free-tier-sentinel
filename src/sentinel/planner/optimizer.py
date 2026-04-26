@@ -354,21 +354,21 @@ class CapacityAwarePlanOptimizer(PlanOptimizer):
         )
 
         # Get constraints and filter by available capacity
-        available_constraints = self._filter_constraints_by_capacity(
+        available_constraints, capacity_levels = self._filter_constraints_by_capacity(
             preferred_providers
         )
 
         # Allocate compute resources
         if compute_hours > 0:
             compute_resources = self._allocate_compute_with_capacity(
-                compute_hours, available_constraints
+                compute_hours, available_constraints, capacity_levels
             )
             plan.resources.extend(compute_resources)
 
         # Allocate storage resources
         if storage_gb > 0:
             storage_resources = self._allocate_storage_with_capacity(
-                storage_gb, available_constraints
+                storage_gb, available_constraints, capacity_levels
             )
             plan.resources.extend(storage_resources)
 
@@ -376,9 +376,14 @@ class CapacityAwarePlanOptimizer(PlanOptimizer):
 
     def _filter_constraints_by_capacity(
         self, preferred_providers: list[str]
-    ) -> list[Constraint]:
-        """Filter constraints to only include those with available capacity."""
+    ) -> tuple[list[Constraint], dict[int, float]]:
+        """Filter constraints to only include those with available capacity.
+
+        Returns:
+            Tuple of (available_constraints, capacity_levels_by_id)
+        """
         available_constraints = []
+        capacity_levels: dict[int, float] = {}
 
         for constraint in self.constraints:
             if constraint.provider not in preferred_providers:
@@ -393,21 +398,18 @@ class CapacityAwarePlanOptimizer(PlanOptimizer):
                 )
 
                 if capacity_result.available:
-                    # Add capacity level as a property for sorting
-                    constraint_with_capacity = constraint
-                    constraint_with_capacity._capacity_level = (
-                        capacity_result.capacity_level
-                    )
-                    available_constraints.append(constraint_with_capacity)
+                    available_constraints.append(constraint)
+                    capacity_levels[id(constraint)] = capacity_result.capacity_level
 
             except Exception:
                 # Skip constraints where capacity check fails
                 continue
 
-        return available_constraints
+        return available_constraints, capacity_levels
 
     def _allocate_compute_with_capacity(
-        self, total_hours: int, available_constraints: list[Constraint]
+        self, total_hours: int, available_constraints: list[Constraint],
+        capacity_levels: dict[int, float]
     ) -> list[Resource]:
         """Allocate compute resources considering capacity levels."""
         resources = []
@@ -422,7 +424,7 @@ class CapacityAwarePlanOptimizer(PlanOptimizer):
         compute_constraints.sort(
             key=lambda c: (
                 not c.is_free_tier(),  # Free tier first
-                -getattr(c, "_capacity_level", 0.0),  # Higher capacity first
+                -capacity_levels.get(id(c), 0.0),  # Higher capacity first
                 c.cost_per_unit,  # Lower cost first
             )
         )
@@ -449,7 +451,8 @@ class CapacityAwarePlanOptimizer(PlanOptimizer):
         return resources
 
     def _allocate_storage_with_capacity(
-        self, total_gb: int, available_constraints: list[Constraint]
+        self, total_gb: int, available_constraints: list[Constraint],
+        capacity_levels: dict[int, float]
     ) -> list[Resource]:
         """Allocate storage resources considering capacity levels."""
         resources = []
@@ -463,7 +466,7 @@ class CapacityAwarePlanOptimizer(PlanOptimizer):
         storage_constraints.sort(
             key=lambda c: (
                 not c.is_free_tier(),
-                -getattr(c, "_capacity_level", 0.0),
+                -capacity_levels.get(id(c), 0.0),
                 c.cost_per_unit,
             )
         )

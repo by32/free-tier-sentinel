@@ -1,7 +1,6 @@
 """Infrastructure as Code export functionality."""
 
 from enum import Enum
-from typing import Dict, Any
 
 from sentinel.models.core import Plan, Resource
 
@@ -16,7 +15,7 @@ class IaCFormat(Enum):
 
 class IaCExporter:
     """Export deployment plans as Infrastructure as Code."""
-    
+
     def export(self, plan: Plan, format: IaCFormat) -> str:
         """Export plan in the specified IaC format."""
         if format == IaCFormat.TERRAFORM:
@@ -29,7 +28,7 @@ class IaCExporter:
             return self._export_ansible(plan)
         else:
             raise ValueError(f"Unsupported IaC format: {format}")
-    
+
     def _export_terraform(self, plan: Plan) -> str:
         """Export plan as Terraform HCL."""
         terraform_code = f"""# {plan.name}
@@ -53,10 +52,10 @@ terraform {{
 }}
 
 """
-        
+
         # Add provider configurations
-        providers = set(resource.provider for resource in plan.resources)
-        
+        providers = {resource.provider for resource in plan.resources}
+
         for provider in providers:
             if provider == "aws":
                 terraform_code += """provider "aws" {
@@ -94,13 +93,13 @@ variable "gcp_region" {
 }
 
 """
-        
+
         # Add resources
         for i, resource in enumerate(plan.resources):
             terraform_code += self._resource_to_terraform(resource, i)
-        
+
         return terraform_code
-    
+
     def _resource_to_terraform(self, resource: Resource, index: int) -> str:
         """Convert a resource to Terraform HCL."""
         if resource.provider == "aws":
@@ -108,7 +107,7 @@ variable "gcp_region" {
                 return f"""resource "aws_instance" "instance_{index}" {{
   ami           = data.aws_ami.ubuntu.id
   instance_type = "{resource.resource_type}"
-  
+
   tags = {{
     Name = "{resource.resource_type}-{index}"
     Environment = "free-tier"
@@ -118,7 +117,7 @@ variable "gcp_region" {
 data "aws_ami" "ubuntu" {{
   most_recent = true
   owners      = ["099720109477"] # Canonical
-  
+
   filter {{
     name   = "name"
     values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
@@ -129,7 +128,7 @@ data "aws_ami" "ubuntu" {{
             elif resource.service == "s3":
                 return f"""resource "aws_s3_bucket" "bucket_{index}" {{
   bucket = "free-tier-bucket-{index}-${{random_id.bucket_suffix.hex}}"
-  
+
   tags = {{
     Environment = "free-tier"
   }}
@@ -140,34 +139,34 @@ resource "random_id" "bucket_suffix" {{
 }}
 
 """
-        
+
         elif resource.provider == "gcp":
             if resource.service == "compute":
                 return f"""resource "google_compute_instance" "instance_{index}" {{
   name         = "free-tier-instance-{index}"
   machine_type = "{resource.resource_type}"
   zone         = "${{var.gcp_region}}-a"
-  
+
   boot_disk {{
     initialize_params {{
       image = "debian-cloud/debian-11"
     }}
   }}
-  
+
   network_interface {{
     network = "default"
     access_config {{
       // Ephemeral public IP
     }}
   }}
-  
+
   tags = ["free-tier"]
 }}
 
 """
-        
+
         return f"# Unsupported resource: {resource.provider}:{resource.service}\n"
-    
+
     def _export_cloudformation(self, plan: Plan) -> str:
         """Export plan as AWS CloudFormation YAML."""
         cf_template = f"""AWSTemplateFormatVersion: '2010-09-09'
@@ -184,7 +183,7 @@ Parameters:
 
 Resources:
 """
-        
+
         for i, resource in enumerate(plan.resources):
             if resource.provider == "aws" and resource.service == "ec2":
                 cf_template += f"""  Instance{i}:
@@ -193,13 +192,13 @@ Resources:
       ImageId: !Ref LatestAmiId
       InstanceType: {resource.resource_type}
       Tags:
-        - Key: Name  
+        - Key: Name
           Value: free-tier-instance-{i}
         - Key: Environment
           Value: free-tier
 
 """
-        
+
         cf_template += """  LatestAmiId:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
@@ -211,9 +210,9 @@ Outputs:
       - ','
       - !Ref Instance0
 """
-        
+
         return cf_template
-    
+
     def _export_pulumi(self, plan: Plan) -> str:
         """Export plan as Pulumi Python code."""
         pulumi_code = f'''"""
@@ -230,7 +229,7 @@ import pulumi_azure as azure
 config = pulumi.Config()
 
 '''
-        
+
         for i, resource in enumerate(plan.resources):
             if resource.provider == "aws" and resource.service == "ec2":
                 pulumi_code += f'''
@@ -246,9 +245,9 @@ instance_{i} = aws.ec2.Instance("instance-{i}",
 
 pulumi.export(f"instance_{i}_public_ip", instance_{i}.public_ip)
 '''
-        
+
         return pulumi_code
-    
+
     def _export_ansible(self, plan: Plan) -> str:
         """Export plan as Ansible playbook."""
         ansible_yaml = f"""---
@@ -259,14 +258,14 @@ pulumi.export(f"instance_{i}_public_ip", instance_{i}.public_ip)
   hosts: localhost
   connection: local
   gather_facts: false
-  
+
   vars:
     aws_region: us-east-1
     gcp_project: your-gcp-project
-    
+
   tasks:
 """
-        
+
         for i, resource in enumerate(plan.resources):
             if resource.provider == "aws" and resource.service == "ec2":
                 ansible_yaml += f"""
@@ -281,5 +280,5 @@ pulumi.export(f"instance_{i}_public_ip", instance_{i}.public_ip)
         state: present
       register: ec2_instance_{i}
 """
-        
+
         return ansible_yaml

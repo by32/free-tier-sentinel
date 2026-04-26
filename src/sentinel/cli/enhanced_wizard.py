@@ -1,63 +1,62 @@
 """Enhanced interactive wizard with beautiful UI and autocomplete."""
 
+from datetime import UTC, datetime
+
 import questionary
-from questionary import ValidationError
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.text import Text
-from typing import List, Dict, Any
-from datetime import datetime, UTC
 
-from sentinel.models.core import Resource, Plan
+from sentinel.models.core import Plan, Resource
+
 from .planning import SUPPORTED_PROVIDERS
 
 
 class EnhancedInteractivePlanner:
     """Interactive planner with enhanced UI using Rich and Questionary."""
-    
+
     def __init__(self):
         self.console = Console()
-        self.resources: List[Resource] = []
-        
+        self.resources: list[Resource] = []
+
     def create_plan(self) -> Plan:
         """Launch enhanced interactive wizard to create a deployment plan."""
         # Welcome screen
         self._show_welcome()
-        
+
         # Step 1: Provider selection with autocomplete
         provider = self._select_provider_enhanced()
-        
+
         # Step 2: Region selection with descriptions
         region = self._select_region_enhanced(provider)
-        
+
         # Step 3: Resource configuration with guided flow
         self._configure_resources_enhanced(provider, region)
-        
+
         # Step 4: Plan metadata with validation
         plan_name, plan_description = self._get_plan_metadata()
-        
+
         # Step 5: Review and confirm
         plan = Plan(
             name=plan_name,
             description=plan_description,
             resources=self.resources
         )
-        
+
         if self._review_and_confirm_plan(plan):
             return plan
         else:
             self.console.print("❌ Plan creation cancelled.", style="red")
             raise KeyboardInterrupt("Plan creation cancelled by user")
-    
+
     def _show_welcome(self) -> None:
         """Display enhanced welcome screen."""
         welcome_text = Text()
         welcome_text.append("🛡️ ", style="bold blue")
         welcome_text.append("Free-Tier Sentinel", style="bold white")
         welcome_text.append(" - Interactive Planner", style="bold cyan")
-        
+
         welcome_panel = Panel(
             Text.assemble(
                 welcome_text, "\n\n",
@@ -72,23 +71,23 @@ class EnhancedInteractivePlanner:
             border_style="blue",
             padding=(1, 2)
         )
-        
+
         self.console.print(welcome_panel)
         self.console.print()
-    
+
     def _select_provider_enhanced(self) -> str:
         """Enhanced provider selection with descriptions and icons."""
         provider_choices = []
         for key, info in SUPPORTED_PROVIDERS.items():
             icon = {
                 'aws': '🟠',
-                'gcp': '🟡', 
+                'gcp': '🟡',
                 'azure': '🔵'
             }.get(key, '☁️')
-            
+
             choice_text = f"{icon} {info['name']} ({key})"
             provider_choices.append(questionary.Choice(choice_text, value=key))
-        
+
         provider_answer = questionary.select(
             "🏗️  Which cloud provider would you like to use?",
             choices=provider_choices,
@@ -99,16 +98,16 @@ class EnhancedInteractivePlanner:
                 ('answer', 'fg:#44BC84 bold'),
             ])
         ).ask()
-        
+
         if not provider_answer:
             raise KeyboardInterrupt("Provider selection cancelled")
-            
+
         return provider_answer
-    
+
     def _select_region_enhanced(self, provider: str) -> str:
         """Enhanced region selection with descriptions."""
         regions = SUPPORTED_PROVIDERS[provider]['regions']
-        
+
         # Add descriptions for popular regions
         region_info = {
             'us-east-1': 'US East (N. Virginia) - Most services available',
@@ -119,15 +118,15 @@ class EnhancedInteractivePlanner:
             'eastus': 'East US (Virginia) - Azure primary region',
             'westeurope': 'West Europe (Netherlands) - Azure Europe'
         }
-        
+
         region_choices = []
         for region in regions:
             description = region_info.get(region, 'Standard region')
             choice_text = f"{region} - {description}"
             region_choices.append(questionary.Choice(choice_text, value=region))
-        
+
         region_answer = questionary.select(
-            f"🌍 Which region would you like to deploy in?",
+            "🌍 Which region would you like to deploy in?",
             choices=region_choices,
             style=questionary.Style([
                 ('selected', 'bg:#0078D4 bold'),
@@ -135,25 +134,25 @@ class EnhancedInteractivePlanner:
                 ('answer', 'fg:#44BC84 bold'),
             ])
         ).ask()
-        
+
         if not region_answer:
             raise KeyboardInterrupt("Region selection cancelled")
-            
+
         return region_answer
-    
+
     def _configure_resources_enhanced(self, provider: str, region: str) -> None:
         """Enhanced resource configuration with guided flow."""
         self.console.print(f"\n🔧 Configuring resources for {provider} in {region}")
-        
+
         # Show free-tier summary for the selected provider
         self._show_free_tier_summary(provider)
-        
+
         # Ask if user wants to see paid resources
         show_paid = questionary.confirm(
             "Would you like to see paid resources in addition to free-tier?",
             default=False
         ).ask()
-        
+
         # Define resource types with descriptions and free-tier info
         resource_types = {
             'aws': {
@@ -216,7 +215,7 @@ class EnhancedInteractivePlanner:
                 }
             }
         }
-        
+
         # Interactive resource selection
         while True:
             # Ask what type of resource to add
@@ -225,17 +224,17 @@ class EnhancedInteractivePlanner:
             for cat in categories:
                 icon = {'compute': '💻', 'storage': '💾', 'database': '🗄️'}.get(cat, '⚙️')
                 category_choices.append(questionary.Choice(f"{icon} {cat.title()}", value=cat))
-            
+
             category_choices.append(questionary.Choice("✅ Finish adding resources", value="done"))
-            
+
             category = questionary.select(
                 "What type of resource would you like to add?",
                 choices=category_choices
             ).ask()
-            
+
             if not category or category == "done":
                 break
-                
+
             # Select service within category
             services = list(resource_types[provider][category].keys())
             if len(services) == 1:
@@ -245,10 +244,10 @@ class EnhancedInteractivePlanner:
                     f"Which {category} service?",
                     choices=services
                 ).ask()
-                
+
             if not service:
                 continue
-                
+
             # Select resource type with descriptions
             resource_options = resource_types[provider][category][service]
             resource_choices = []
@@ -256,24 +255,24 @@ class EnhancedInteractivePlanner:
                 # Skip paid resources if user doesn't want to see them
                 if not show_paid and not info['free']:
                     continue
-                    
+
                 free_indicator = "🆓" if info['free'] else "💰"
                 free_label = "Always Free" if provider == 'gcp' and info['free'] else "Free Tier" if info['free'] else "Paid"
                 choice_text = f"{free_indicator} {res_type} - {free_label}: {info['desc']}"
                 resource_choices.append(questionary.Choice(choice_text, value=res_type))
-            
+
             if not resource_choices:
                 self.console.print(f"No free-tier options available for {service}. Skipping...", style="yellow")
                 continue
-            
+
             resource_type = questionary.select(
                 f"Which {service} resource type?",
                 choices=resource_choices
             ).ask()
-            
+
             if not resource_type:
                 continue
-            
+
             # Get quantity and usage based on resource type
             if category == 'compute':
                 # For compute resources, ask for number of instances
@@ -282,26 +281,26 @@ class EnhancedInteractivePlanner:
                     default="1",
                     validate=lambda x: x.isdigit() and int(x) > 0
                 ).ask()
-                
+
                 if not quantity:
                     continue
-                    
+
                 usage = questionary.text(
                     "Estimated monthly usage in hours?",
                     default="750",  # Full month for free tier
                     validate=lambda x: x.isdigit() and int(x) > 0
                 ).ask()
-                
+
             elif category == 'storage':
                 # For storage, quantity is always 1 (one storage account/bucket)
                 quantity = "1"
-                
+
                 usage = questionary.text(
                     "Storage size in GB?",
                     default="5",  # Free tier limit
                     validate=lambda x: x.isdigit() and int(x) > 0
                 ).ask()
-                
+
             elif category == 'database':
                 # For databases, ask for number of instances
                 quantity = questionary.text(
@@ -309,16 +308,16 @@ class EnhancedInteractivePlanner:
                     default="1",
                     validate=lambda x: x.isdigit() and int(x) > 0
                 ).ask()
-                
+
                 if not quantity:
                     continue
-                    
+
                 usage = questionary.text(
                     "Estimated monthly usage in hours?",
                     default="750",  # Full month for free tier
                     validate=lambda x: x.isdigit() and int(x) > 0
                 ).ask()
-            
+
             else:
                 # Default case
                 quantity = questionary.text(
@@ -326,19 +325,19 @@ class EnhancedInteractivePlanner:
                     default="1",
                     validate=lambda x: x.isdigit() and int(x) > 0
                 ).ask()
-                
+
                 if not quantity:
                     continue
-                    
+
                 usage = questionary.text(
                     "Estimated monthly usage?",
                     default="100",
                     validate=lambda x: x.isdigit() and int(x) > 0
                 ).ask()
-            
+
             if not usage:
                 continue
-            
+
             # Create resource
             resource = Resource(
                 provider=provider,
@@ -348,9 +347,9 @@ class EnhancedInteractivePlanner:
                 quantity=int(quantity),
                 estimated_monthly_usage=int(usage)
             )
-            
+
             self.resources.append(resource)
-            
+
             # Show added resource with appropriate description
             if category == 'compute':
                 desc = f"{resource.quantity} instance(s), {resource.estimated_monthly_usage} hours/month"
@@ -360,9 +359,9 @@ class EnhancedInteractivePlanner:
                 desc = f"{resource.quantity} instance(s), {resource.estimated_monthly_usage} hours/month"
             else:
                 desc = f"quantity: {resource.quantity}, usage: {resource.estimated_monthly_usage}"
-            
+
             self.console.print(f"✅ Added: {resource.service} {resource.resource_type} ({desc})", style="green")
-            
+
         if not self.resources:
             self.console.print("⚠️  No resources added. Adding a default t2.micro instance.", style="yellow")
             default_resource = Resource(
@@ -374,7 +373,7 @@ class EnhancedInteractivePlanner:
                 estimated_monthly_usage=100
             )
             self.resources.append(default_resource)
-    
+
     def _get_plan_metadata(self) -> tuple[str, str]:
         """Get plan name and description with validation."""
         plan_name = questionary.text(
@@ -382,20 +381,20 @@ class EnhancedInteractivePlanner:
             default=f"free-tier-plan-{datetime.now(UTC).strftime('%Y%m%d')}",
             validate=lambda x: len(x.strip()) >= 3
         ).ask()
-        
+
         if not plan_name:
             raise KeyboardInterrupt("Plan name input cancelled")
-        
+
         plan_description = questionary.text(
             "📄 Enter a description for your plan:",
             default="Free-tier resource deployment created with interactive wizard"
         ).ask()
-        
+
         if not plan_description:
             plan_description = "Free-tier resource deployment"
-            
+
         return plan_name.strip(), plan_description.strip()
-    
+
     def _show_free_tier_summary(self, provider: str) -> None:
         """Show a summary of free-tier offerings for the selected provider."""
         summaries = {
@@ -433,30 +432,33 @@ class EnhancedInteractivePlanner:
                 'note': '⚠️  Mix of 12-month and always-free'
             }
         }
-        
+
         summary = summaries[provider]
+        title = str(summary['title'])
+        offerings = summary['offerings']
+        note = str(summary['note'])
         panel = Panel(
             Text.assemble(
-                Text(summary['title'], style="bold"),
+                Text(title, style="bold"),
                 "\n\n",
-                "\n".join(summary['offerings']),
+                "\n".join(offerings),  # type: ignore[arg-type]
                 "\n\n",
-                Text(summary['note'], style="italic yellow")
+                Text(note, style="italic yellow")
             ),
             title="📋 Free Tier Summary",
             border_style="green",
             padding=(1, 2)
         )
-        
+
         self.console.print(panel)
         self.console.print()
-    
+
     def _review_and_confirm_plan(self, plan: Plan) -> bool:
         """Show plan review and get confirmation."""
         self.console.print("\n" + "="*60)
         self.console.print("📋 Plan Review", style="bold blue")
         self.console.print("="*60)
-        
+
         # Plan summary table
         table = Table(title=f"Plan: {plan.name}")
         table.add_column("Service", style="cyan")
@@ -464,7 +466,7 @@ class EnhancedInteractivePlanner:
         table.add_column("Quantity", justify="right", style="green")
         table.add_column("Usage", justify="right", style="yellow")
         table.add_column("Region", style="blue")
-        
+
         for resource in plan.resources:
             # Determine usage unit based on service type
             if resource.service in ['s3', 'storage', 'blob']:
@@ -476,7 +478,7 @@ class EnhancedInteractivePlanner:
             else:
                 usage_str = str(resource.estimated_monthly_usage)
                 quantity_str = str(resource.quantity)
-            
+
             table.add_row(
                 resource.service,
                 resource.resource_type,
@@ -484,15 +486,15 @@ class EnhancedInteractivePlanner:
                 usage_str,
                 resource.region
             )
-        
+
         self.console.print(table)
         self.console.print(f"\n📊 Total estimated cost: ${plan.total_estimated_cost}")
         self.console.print(f"📝 Description: {plan.description}")
-        
+
         # Confirmation
         confirm = questionary.confirm(
             "\n🚀 Create this plan?",
             default=True
         ).ask()
-        
+
         return confirm if confirm is not None else False
